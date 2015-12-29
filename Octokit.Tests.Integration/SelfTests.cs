@@ -1,4 +1,6 @@
 ﻿using Xunit;
+using System.Threading.Tasks;
+using System.Linq;
 
 namespace Octokit.Tests.Integration
 {
@@ -12,6 +14,19 @@ namespace Octokit.Tests.Integration
         {
             var errors = typeof(SelfTests).Assembly.GetAsyncVoidMethodsList();
             Assert.Equal("", errors);
+        }
+
+        [Fact(Skip = "test doesn't fail, so let's not worry about it for now")]
+        public async Task DocumentedApiMatchesImplementation()
+        {
+            var documentedApis = WebsiteScraper.GetListOfDocumentedApis();
+
+            var deprecatedEndpoints = documentedApis.SelectMany(a => a.Endpoints)
+                .Where(e => e.IsDeprecated)
+                .ToList();
+
+            var allErrors = documentedApis.SelectMany(api => api.Validate())
+                .ToList();
         }
     }
 }
