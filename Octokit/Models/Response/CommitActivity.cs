@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.Diagnostics;
 using System.Globalization;
 using System.Linq;
@@ -13,20 +14,22 @@ namespace Octokit
 
         public CommitActivity(IEnumerable<WeeklyCommitActivity> activity)
         {
-            Activity = activity;
+            Ensure.ArgumentNotNull(activity, "activity");
+
+            Activity = new ReadOnlyCollection<WeeklyCommitActivity>(activity.ToList());
         }
 
         /// <summary>
         /// Returns the last year of commit activity grouped by week.
         /// </summary>
-        public IEnumerable<WeeklyCommitActivity> Activity { get; private set; }
+        public IReadOnlyList<WeeklyCommitActivity> Activity { get; private set; }
 
         internal string DebuggerDisplay
         {
             get
             {
-                return String.Format(CultureInfo.InvariantCulture,
-                    "Weeks of activity: {0}",Activity.Count());
+                return string.Format(CultureInfo.InvariantCulture,
+                    "Weeks of activity: {0}", Activity.Count());
             }
         }
     }

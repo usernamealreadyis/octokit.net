@@ -2,7 +2,6 @@
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using NSubstitute;
-using Octokit.Tests.Helpers;
 using Xunit;
 
 namespace Octokit.Tests.Clients
@@ -19,8 +18,7 @@ namespace Octokit.Tests.Clients
 
                 client.Get("fake", "repo", 42);
 
-                connection.Received().Get<PullRequest>(Arg.Is<Uri>(u => u.ToString() == "repos/fake/repo/pulls/42"),
-                    null);
+                connection.Received().Get<PullRequest>(Arg.Is<Uri>(u => u.ToString() == "repos/fake/repo/pulls/42"));
             }
 
             [Fact]
@@ -28,10 +26,10 @@ namespace Octokit.Tests.Clients
             {
                 var client = new PullRequestsClient(Substitute.For<IApiConnection>());
 
-                await AssertEx.Throws<ArgumentNullException>(() => client.Get(null, "name", 1));
-                await AssertEx.Throws<ArgumentNullException>(() => client.Get("owner", null, 1));
-                await AssertEx.Throws<ArgumentException>(() => client.Get(null, "", 1));
-                await AssertEx.Throws<ArgumentException>(() => client.Get("", null, 1));
+                await Assert.ThrowsAsync<ArgumentNullException>(() => client.Get(null, "name", 1));
+                await Assert.ThrowsAsync<ArgumentNullException>(() => client.Get("owner", null, 1));
+                await Assert.ThrowsAsync<ArgumentNullException>(() => client.Get(null, "", 1));
+                await Assert.ThrowsAsync<ArgumentException>(() => client.Get("", null, 1));
             }
         }
 
@@ -43,7 +41,7 @@ namespace Octokit.Tests.Clients
                 var connection = Substitute.For<IApiConnection>();
                 var client = new PullRequestsClient(connection);
 
-                await client.GetForRepository("fake", "repo");
+                await client.GetAllForRepository("fake", "repo");
 
                 connection.Received().GetAll<PullRequest>(Arg.Is<Uri>(u => u.ToString() == "repos/fake/repo/pulls"),
                     Arg.Any<Dictionary<string, string>>());
@@ -55,13 +53,15 @@ namespace Octokit.Tests.Clients
                 var connection = Substitute.For<IApiConnection>();
                 var client = new PullRequestsClient(connection);
 
-                client.GetForRepository("fake", "repo", new PullRequestRequest { Head = "user:ref-head", Base = "fake_base_branch"  });
+                client.GetAllForRepository("fake", "repo", new PullRequestRequest { Head = "user:ref-head", Base = "fake_base_branch" });
 
                 connection.Received().GetAll<PullRequest>(Arg.Is<Uri>(u => u.ToString() == "repos/fake/repo/pulls"),
-                    Arg.Is<Dictionary<string, string>>(d => d.Count == 3
+                    Arg.Is<Dictionary<string, string>>(d => d.Count == 5
                         && d["head"] == "user:ref-head"
                         && d["state"] == "open"
-                        && d["base"] == "fake_base_branch"));
+                        && d["base"] == "fake_base_branch"
+                        && d["sort"] == "created"
+                        && d["direction"] == "desc"));
             }
         }
 
@@ -86,15 +86,15 @@ namespace Octokit.Tests.Clients
                 var connection = Substitute.For<IApiConnection>();
                 var client = new PullRequestsClient(connection);
 
-                await AssertEx.Throws<ArgumentNullException>(() =>
+                await Assert.ThrowsAsync<ArgumentNullException>(() =>
                     client.Create(null, "name", new NewPullRequest("title", "ref", "ref2")));
-                await AssertEx.Throws<ArgumentException>(() =>
+                await Assert.ThrowsAsync<ArgumentException>(() =>
                     client.Create("", "name", new NewPullRequest("title", "ref", "ref2")));
-                await AssertEx.Throws<ArgumentNullException>(() =>
+                await Assert.ThrowsAsync<ArgumentNullException>(() =>
                     client.Create("owner", null, new NewPullRequest("title", "ref", "ref2")));
-                await AssertEx.Throws<ArgumentException>(() =>
+                await Assert.ThrowsAsync<ArgumentException>(() =>
                     client.Create("owner", "", new NewPullRequest("title", "ref", "ref2")));
-                await AssertEx.Throws<ArgumentNullException>(() =>
+                await Assert.ThrowsAsync<ArgumentNullException>(() =>
                     client.Create("owner", "name", null));
             }
         }
@@ -120,25 +120,25 @@ namespace Octokit.Tests.Clients
                 var connection = Substitute.For<IApiConnection>();
                 var client = new PullRequestsClient(connection);
 
-                await AssertEx.Throws<ArgumentNullException>(() =>
+                await Assert.ThrowsAsync<ArgumentNullException>(() =>
                     client.Create(null, "name", new NewPullRequest("title", "ref", "ref2")));
-                await AssertEx.Throws<ArgumentException>(() =>
+                await Assert.ThrowsAsync<ArgumentException>(() =>
                     client.Create("", "name", new NewPullRequest("title", "ref", "ref2")));
-                await AssertEx.Throws<ArgumentNullException>(() =>
+                await Assert.ThrowsAsync<ArgumentNullException>(() =>
                     client.Create("owner", null, new NewPullRequest("title", "ref", "ref2")));
-                await AssertEx.Throws<ArgumentException>(() =>
+                await Assert.ThrowsAsync<ArgumentException>(() =>
                     client.Create("owner", "", new NewPullRequest("title", "ref", "ref2")));
-                await AssertEx.Throws<ArgumentNullException>(() =>
+                await Assert.ThrowsAsync<ArgumentNullException>(() =>
                     client.Create("owner", "name", null));
             }
         }
 
-        public class TheMergeMethod 
+        public class TheMergeMethod
         {
             [Fact]
-            public void PutsToCorrectUrl() 
+            public void PutsToCorrectUrl()
             {
-                var mergePullRequest = new MergePullRequest("fake commit message");
+                var mergePullRequest = new MergePullRequest { CommitMessage = "fake commit message" };
                 var connection = Substitute.For<IApiConnection>();
                 var client = new PullRequestsClient(connection);
 
@@ -154,16 +154,16 @@ namespace Octokit.Tests.Clients
                 var connection = Substitute.For<IApiConnection>();
                 var client = new PullRequestsClient(connection);
 
-                await AssertEx.Throws<ArgumentNullException>(() =>
-                    client.Merge(null, "name", 42, new MergePullRequest("message")));
-                await AssertEx.Throws<ArgumentNullException>(() =>
-                    client.Merge("owner", null, 42, new MergePullRequest("message")));
-                await AssertEx.Throws<ArgumentNullException>(() =>
+                await Assert.ThrowsAsync<ArgumentNullException>(() =>
+                    client.Merge(null, "name", 42, new MergePullRequest { CommitMessage = "message" }));
+                await Assert.ThrowsAsync<ArgumentNullException>(() =>
+                    client.Merge("owner", null, 42, new MergePullRequest { CommitMessage = "message" }));
+                await Assert.ThrowsAsync<ArgumentNullException>(() =>
                     client.Merge("owner", "name", 42, null));
             }
         }
 
-        public class TheMergedMethod 
+        public class TheMergedMethod
         {
             [Fact]
             public void RequestsCorrectUrl()
@@ -185,14 +185,14 @@ namespace Octokit.Tests.Clients
                 var connection = Substitute.For<IApiConnection>();
                 var client = new PullRequestsClient(connection);
 
-                await AssertEx.Throws<ArgumentNullException>(() => client.Merged(null, "name", 1));
-                await AssertEx.Throws<ArgumentNullException>(() => client.Merged("owner", null, 1));
-                await AssertEx.Throws<ArgumentException>(() => client.Merged(null, "", 1));
-                await AssertEx.Throws<ArgumentException>(() => client.Merged("", null, 1));
+                await Assert.ThrowsAsync<ArgumentNullException>(() => client.Merged(null, "name", 1));
+                await Assert.ThrowsAsync<ArgumentNullException>(() => client.Merged("owner", null, 1));
+                await Assert.ThrowsAsync<ArgumentNullException>(() => client.Merged(null, "", 1));
+                await Assert.ThrowsAsync<ArgumentException>(() => client.Merged("", null, 1));
             }
         }
 
-        public class TheCommitsMethod 
+        public class TheCommitsMethod
         {
             [Fact]
             public async Task RequestsCorrectUrl()
@@ -201,7 +201,7 @@ namespace Octokit.Tests.Clients
                 var client = new PullRequestsClient(connection);
 
                 await client.Commits("fake", "repo", 42);
-				
+
                 connection.Received()
                     .GetAll<PullRequestCommit>(Arg.Is<Uri>(u => u.ToString() == "repos/fake/repo/pulls/42/commits"));
             }
@@ -212,10 +212,37 @@ namespace Octokit.Tests.Clients
                 var connection = Substitute.For<IApiConnection>();
                 var client = new PullRequestsClient(connection);
 
-                await AssertEx.Throws<ArgumentNullException>(() => client.Commits(null, "name", 1));
-                await AssertEx.Throws<ArgumentNullException>(() => client.Commits("owner", null, 1));
-                await AssertEx.Throws<ArgumentException>(() => client.Commits(null, "", 1));
-                await AssertEx.Throws<ArgumentException>(() => client.Commits("", null, 1));
+                await Assert.ThrowsAsync<ArgumentNullException>(() => client.Commits(null, "name", 1));
+                await Assert.ThrowsAsync<ArgumentNullException>(() => client.Commits("owner", null, 1));
+                await Assert.ThrowsAsync<ArgumentNullException>(() => client.Commits(null, "", 1));
+                await Assert.ThrowsAsync<ArgumentException>(() => client.Commits("", null, 1));
+            }
+        }
+
+        public class TheFilesMethod
+        {
+            [Fact]
+            public async Task RequestsCorrectUrl()
+            {
+                var connection = Substitute.For<IApiConnection>();
+                var client = new PullRequestsClient(connection);
+
+                await client.Files("fake", "repo", 42);
+
+                connection.Received()
+                    .GetAll<PullRequestFile>(Arg.Is<Uri>(u => u.ToString() == "repos/fake/repo/pulls/42/files"));
+            }
+
+            [Fact]
+            public async Task EnsuresArgumentsNotNull()
+            {
+                var connection = Substitute.For<IApiConnection>();
+                var client = new PullRequestsClient(connection);
+
+                await Assert.ThrowsAsync<ArgumentNullException>(() => client.Files(null, "name", 1));
+                await Assert.ThrowsAsync<ArgumentNullException>(() => client.Files("owner", null, 1));
+                await Assert.ThrowsAsync<ArgumentException>(() => client.Files("", "name", 1));
+                await Assert.ThrowsAsync<ArgumentException>(() => client.Files("owner", "", 1));
             }
         }
 

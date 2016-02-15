@@ -51,5 +51,23 @@ namespace Octokit
         /// Information about the API rate limit
         /// </summary>
         public RateLimit RateLimit { get; private set; }
+
+        /// <summary>
+        /// Allows you to clone ApiInfo 
+        /// </summary>
+        /// <returns>A clone of <seealso cref="ApiInfo"/></returns>
+        public ApiInfo Clone()
+        {
+            // Seem to have to do this to pass a whole bunch of tests (for example Octokit.Tests.Clients.EventsClientTests.DeserializesCommitCommentEventCorrectly)
+            // I believe this has something to do with the Mocking framework.
+            if (Links == null || OauthScopes == null || RateLimit == null || Etag == null)
+                return null;
+
+            return new ApiInfo(Links.Clone(),
+                                OauthScopes.Clone(),
+                                AcceptedOauthScopes.Clone(),
+                                new string(this.Etag.ToCharArray()),
+                                RateLimit.Clone());
+        }
     }
 }

@@ -1,8 +1,6 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Diagnostics;
 using System.Globalization;
-using System.Threading.Tasks;
 using Octokit.Internal;
 
 namespace Octokit
@@ -66,7 +64,7 @@ namespace Octokit
         {
             get
             {
-                return String.Format(CultureInfo.InvariantCulture, "Public Url: {0} ", CurrentUserPublicUrl);
+                return string.Format(CultureInfo.InvariantCulture, "Public Url: {0} ", CurrentUserPublicUrl);
             }
         }
     }

@@ -13,16 +13,16 @@ namespace Octokit
     public interface IIssueCommentsClient
     {
         /// <summary>
-        /// Gets a single Issue Comment by number.
+        /// Gets a single Issue Comment by id.
         /// </summary>
         /// <remarks>http://developer.github.com/v3/issues/comments/#get-a-single-comment</remarks>
         /// <param name="owner">The owner of the repository</param>
         /// <param name="name">The name of the repository</param>
-        /// <param name="number">The issue number</param>
+        /// <param name="id">The issue comment id</param>
         /// <returns></returns>
         [SuppressMessage("Microsoft.Naming", "CA1716:IdentifiersShouldNotMatchKeywords", MessageId = "Get",
             Justification = "Method makes a network request")]
-        Task<IssueComment> Get(string owner, string name, int number);
+        Task<IssueComment> Get(string owner, string name, int id);
 
         /// <summary>
         /// Gets Issue Comments for a repository.
@@ -31,7 +31,7 @@ namespace Octokit
         /// <param name="owner">The owner of the repository</param>
         /// <param name="name">The name of the repository</param>
         /// <returns></returns>
-        Task<IReadOnlyList<IssueComment>> GetForRepository(string owner, string name);
+        Task<IReadOnlyList<IssueComment>> GetAllForRepository(string owner, string name);
 
         /// <summary>
         /// Gets Issue Comments for a specified Issue.
@@ -41,7 +41,7 @@ namespace Octokit
         /// <param name="name">The name of the repository</param>
         /// <param name="number">The issue number</param>
         /// <returns></returns>
-        Task<IReadOnlyList<IssueComment>> GetForIssue(string owner, string name, int number);
+        Task<IReadOnlyList<IssueComment>> GetAllForIssue(string owner, string name, int number);
 
         /// <summary>
         /// Creates a new Issue Comment for a specified Issue.
@@ -60,10 +60,10 @@ namespace Octokit
         /// <remarks>http://developer.github.com/v3/issues/comments/#edit-a-comment</remarks>
         /// <param name="owner">The owner of the repository</param>
         /// <param name="name">The name of the repository</param>
-        /// <param name="number">The comment number</param>
+        /// <param name="id">The comment id</param>
         /// <param name="commentUpdate">The modified comment</param>
         /// <returns></returns>
-        Task<IssueComment> Update(string owner, string name, int number, string commentUpdate);
+        Task<IssueComment> Update(string owner, string name, int id, string commentUpdate);
 
         /// <summary>
         /// Deletes the specified Issue Comment
@@ -71,8 +71,8 @@ namespace Octokit
         /// <remarks>http://developer.github.com/v3/issues/comments/#delete-a-comment</remarks>
         /// <param name="owner">The owner of the repository</param>
         /// <param name="name">The name of the repository</param>
-        /// <param name="number">The comment number</param>
+        /// <param name="id">The comment id</param>
         /// <returns></returns>
-        Task Delete(string owner, string name, int number);
+        Task Delete(string owner, string name, int id);
     }
 }

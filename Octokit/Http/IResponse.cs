@@ -1,5 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.Net;
 
 namespace Octokit
@@ -29,7 +28,7 @@ namespace Octokit
         /// Raw response body. Typically a string, but when requesting images, it will be a byte array.
         /// </summary>
         object Body { get; }
-        
+
         /// <summary>
         /// Information about the API.
         /// </summary>

@@ -26,7 +26,7 @@ public class GistCommentsClientTests
 
             await client.Get("24", 1337);
 
-            connection.Received().Get<GistComment>(Arg.Is<Uri>(u => u.ToString() == "gists/24/comments/1337"), null);
+            connection.Received().Get<GistComment>(Arg.Is<Uri>(u => u.ToString() == "gists/24/comments/1337"));
         }
     }
 
@@ -38,7 +38,7 @@ public class GistCommentsClientTests
             var connection = Substitute.For<IApiConnection>();
             var client = new GistCommentsClient(connection);
 
-            await client.GetForGist("24");
+            await client.GetAllForGist("24");
 
             connection.Received().GetAll<GistComment>(Arg.Is<Uri>(u => u.ToString() == "gists/24/comments"));
         }
@@ -51,8 +51,8 @@ public class GistCommentsClientTests
         {
             var client = new GistCommentsClient(Substitute.For<IApiConnection>());
 
-            await AssertEx.Throws<ArgumentNullException>(async () => await client.Create("24", null));
-            await AssertEx.Throws<ArgumentException>(async () => await client.Create("24", ""));
+            await Assert.ThrowsAsync<ArgumentNullException>(() => client.Create("24", null));
+            await Assert.ThrowsAsync<ArgumentException>(() => client.Create("24", ""));
         }
 
         [Fact]
@@ -75,8 +75,8 @@ public class GistCommentsClientTests
         {
             var client = new GistCommentsClient(Substitute.For<IApiConnection>());
 
-            await AssertEx.Throws<ArgumentNullException>(async () => await client.Update("24", 1337, null));
-            await AssertEx.Throws<ArgumentException>(async () => await client.Update("24", 1337, ""));
+            await Assert.ThrowsAsync<ArgumentNullException>(() => client.Update("24", 1337, null));
+            await Assert.ThrowsAsync<ArgumentException>(() => client.Update("24", 1337, ""));
         }
 
         [Fact]

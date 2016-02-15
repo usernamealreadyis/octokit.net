@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
+using System.Net;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -16,6 +17,16 @@ namespace Octokit
         /// The underlying connection.
         /// </summary>
         IConnection Connection { get; }
+
+        /// <summary>
+        /// Gets the API resource at the specified URI.
+        /// </summary>
+        /// <typeparam name="T">Type of the API resource to get.</typeparam>
+        /// <param name="uri">URI of the API resource to get</param>
+        /// <returns>The API resource.</returns>
+        /// <exception cref="ApiException">Thrown when an API error occurs.</exception>
+        [SuppressMessage("Microsoft.Naming", "CA1716:IdentifiersShouldNotMatchKeywords", MessageId = "Get")]
+        Task<T> Get<T>(Uri uri);
 
         /// <summary>
         /// Gets the API resource at the specified URI.
@@ -59,7 +70,7 @@ namespace Octokit
         /// <returns><see cref="IReadOnlyList{T}"/> of the The API resources in the list.</returns>
         /// <exception cref="ApiException">Thrown when an API error occurs.</exception>
         Task<IReadOnlyList<T>> GetAll<T>(Uri uri);
-        
+
         /// <summary>
         /// Gets all API resources in the list at the specified URI.
         /// </summary>
@@ -84,6 +95,14 @@ namespace Octokit
         /// <summary>
         /// Creates a new API resource in the list at the specified URI.
         /// </summary>
+        /// <param name="uri">URI endpoint to send request to</param>
+        /// <returns><seealso cref="HttpStatusCode"/>Representing the received HTTP response</returns>
+        /// <exception cref="ApiException">Thrown when an API error occurs.</exception>
+        Task Post(Uri uri);
+
+        /// <summary>
+        /// Creates a new API resource in the list at the specified URI.
+        /// </summary>
         /// <typeparam name="T">The API resource's type.</typeparam>
         /// <param name="uri">URI of the API resource to get</param>
         /// <param name="data">Object that describes the new API resource; this will be serialized and used as the request's body</param>
@@ -100,7 +119,7 @@ namespace Octokit
         /// <param name="accepts">Accept header to use for the API request</param>
         /// <returns>The created API resource.</returns>
         /// <exception cref="ApiException">Thrown when an API error occurs.</exception>
-        Task<T> Post<T>(Uri uri, object data, string accepts); 
+        Task<T> Post<T>(Uri uri, object data, string accepts);
 
         /// <summary>
         /// Creates a new API resource in the list at the specified URI.
@@ -113,6 +132,19 @@ namespace Octokit
         /// <returns>The created API resource.</returns>
         /// <exception cref="ApiException">Thrown when an API error occurs.</exception>
         Task<T> Post<T>(Uri uri, object data, string accepts, string contentType);
+
+        /// <summary>
+        /// Creates a new API resource in the list at the specified URI.
+        /// </summary>
+        /// <typeparam name="T">The API resource's type.</typeparam>
+        /// <param name="uri">URI of the API resource to get</param>
+        /// <param name="data">Object that describes the new API resource; this will be serialized and used as the request's body</param>
+        /// <param name="accepts">Accept header to use for the API request</param>
+        /// <param name="contentType">Content type of the API request</param>
+        /// <param name="twoFactorAuthenticationCode">Two Factor Authentication Code</param>
+        /// <returns>The created API resource.</returns>
+        /// <exception cref="ApiException">Thrown when an API error occurs.</exception>
+        Task<T> Post<T>(Uri uri, object data, string accepts, string contentType, string twoFactorAuthenticationCode);
 
         /// <summary>
         /// Creates a new API resource in the list at the specified URI.
@@ -207,21 +239,39 @@ namespace Octokit
         /// Deletes the API object at the specified URI.
         /// </summary>
         /// <param name="uri">URI of the API resource to delete</param>
+        /// <param name="twoFactorAuthenticationCode">Two Factor Code</param>
+        /// <returns>A <see cref="Task"/> for the request's execution.</returns>
+        Task Delete(Uri uri, string twoFactorAuthenticationCode);
+
+        /// <summary>
+        /// Deletes the API object at the specified URI.
+        /// </summary>
+        /// <param name="uri">URI of the API resource to delete</param>
         /// <param name="data">Object that describes the API resource; this will be serialized and used as the request's body</param>
         /// <returns>A <see cref="Task"/> for the request's execution.</returns>
         Task Delete(Uri uri, object data);
 
         /// <summary>
         /// Executes a GET to the API object at the specified URI. This operation is appropriate for
-        /// API calls which queue long running calculations.
-        /// It expects the API to respond with an initial 202 Accepted, and queries again until a 
-        /// 200 OK is received.
+        /// API calls which wants to return the redirect URL.
+        /// It expects the API to respond with a 302 Found.
+        /// </summary>
+        /// <param name="uri">URI of the API resource to get</param>
+        /// <returns>The URL returned by the API in the Location header</returns>
+        /// <exception cref="ApiException">Thrown when an API error occurs, or the API does not respond with a 302 Found</exception>
+        Task<string> GetRedirect(Uri uri);
+
+        /// <summary>
+        /// Executes a GET to the API object at the specified URI. This operation is appropriate for API calls which 
+        /// queue long running calculations and return a collection of a resource.
+        /// It expects the API to respond with an initial 202 Accepted, and queries again until a 200 OK is received.
+        /// It returns an empty collection if it receives a 204 No Content response.
         /// </summary>
         /// <typeparam name="T">The API resource's type.</typeparam>
         /// <param name="uri">URI of the API resource to update</param>
         /// <param name="cancellationToken">A token used to cancel this potentially long running request</param>
         /// <returns>The updated API resource.</returns>
         /// <exception cref="ApiException">Thrown when an API error occurs.</exception>
-        Task<T> GetQueuedOperation<T>(Uri uri,CancellationToken cancellationToken);
+        Task<IReadOnlyList<T>> GetQueuedOperation<T>(Uri uri, CancellationToken cancellationToken);
     }
 }

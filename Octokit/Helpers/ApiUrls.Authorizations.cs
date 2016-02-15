@@ -34,19 +34,14 @@ namespace Octokit
             return "authorizations/clients/{0}".FormatUri(clientId);
         }
 
-        /// <summary>
-        /// Returns the <see cref="Uri"/> that authorizations for a given client and fingerprint
-        /// </summary>
-        /// <param name="clientId">
-        /// The 20 character OAuth app client key for
-        /// which to create the token.</param>
-        /// <param name="fingerprint">
-        /// A unique string to distinguish an authorization from others created
-        /// for the same client and user.
-        /// </param>
-        public static Uri AuthorizationsForClient(string clientId, string fingerprint)
+        public static Uri ApplicationAuthorization(string clientId)
         {
-            return "authorizations/clients/{0}/{1}".FormatUri(clientId, fingerprint);
+            return "applications/{0}/tokens".FormatUri(clientId);
+        }
+
+        public static Uri ApplicationAuthorization(string clientId, string accessToken)
+        {
+            return "applications/{0}/tokens/{1}".FormatUri(clientId, accessToken);
         }
     }
 }

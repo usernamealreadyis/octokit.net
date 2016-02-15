@@ -16,18 +16,32 @@ namespace Octokit.Reactive
         public ObservableRepositoriesClient(IGitHubClient client)
         {
             Ensure.ArgumentNotNull(client, "client");
-            
+
             _client = client.Repository;
             _connection = client.Connection;
-            CommitStatus = new ObservableCommitStatusClient(client);
+            Status = new ObservableCommitStatusClient(client);
+            Hooks = new ObservableRepositoryHooksClient(client);
+            Forks = new ObservableRepositoryForksClient(client);
+#pragma warning disable CS0618 // Type or member is obsolete
             RepoCollaborators = new ObservableRepoCollaboratorsClient(client);
+#pragma warning restore CS0618 // Type or member is obsolete
+            Collaborator = new ObservableRepoCollaboratorsClient(client);
             Deployment = new ObservableDeploymentsClient(client);
             Statistics = new ObservableStatisticsClient(client);
             PullRequest = new ObservablePullRequestsClient(client);
+#pragma warning disable CS0618 // Type or member is obsolete
             RepositoryComments = new ObservableRepositoryCommentsClient(client);
+#pragma warning restore CS0618 // Type or member is obsolete
+            Comment = new ObservableRepositoryCommentsClient(client);
+#pragma warning disable CS0618 // Type or member is obsolete
             Commits = new ObservableRepositoryCommitsClient(client);
+#pragma warning restore CS0618 // Type or member is obsolete
+            Commit = new ObservableRepositoryCommitsClient(client);
+            Release = new ObservableReleasesClient(client);
             DeployKeys = new ObservableRepositoryDeployKeysClient(client);
             Content = new ObservableRepositoryContentsClient(client);
+            Merging = new ObservableMergingClient(client);
+            Page = new ObservableRepositoryPagesClient(client);
         }
 
         /// <summary>
@@ -90,6 +104,35 @@ namespace Octokit.Reactive
         }
 
         /// <summary>
+        /// Retrieves every public <see cref="Repository"/>.
+        /// </summary>
+        /// <remarks>
+        /// The default page size on GitHub.com is 30.
+        /// </remarks>
+        /// <returns>A <see cref="IReadOnlyPagedCollection{Repository}"/> of <see cref="Repository"/>.</returns>
+        public IObservable<Repository> GetAllPublic()
+        {
+            return _connection.GetAndFlattenAllPages<Repository>(ApiUrls.AllPublicRepositories());
+        }
+
+        /// <summary>
+        /// Retrieves every public <see cref="Repository"/> since the last repository seen.
+        /// </summary>
+        /// <remarks>
+        /// The default page size on GitHub.com is 30.
+        /// </remarks>
+        /// <param name="request">Search parameters of the last repository seen</param>
+        /// <returns>A <see cref="IReadOnlyPagedCollection{Repository}"/> of <see cref="Repository"/>.</returns>
+        public IObservable<Repository> GetAllPublic(PublicRepositoryRequest request)
+        {
+            Ensure.ArgumentNotNull(request, "request");
+
+            var url = ApiUrls.AllPublicRepositories(request.Since);
+
+            return _connection.GetAndFlattenAllPages<Repository>(url);
+        }
+
+        /// <summary>
         /// Retrieves every <see cref="Repository"/> that belongs to the current user.
         /// </summary>
         /// <remarks>
@@ -100,6 +143,22 @@ namespace Octokit.Reactive
         public IObservable<Repository> GetAllForCurrent()
         {
             return _connection.GetAndFlattenAllPages<Repository>(ApiUrls.Repositories());
+        }
+
+        /// <summary>
+        /// Retrieves every <see cref="Repository"/> that belongs to the current user.
+        /// </summary>
+        /// <remarks>
+        /// The default page size on GitHub.com is 30.
+        /// </remarks>
+        /// <param name="request">Search parameters to filter results on</param>
+        /// <exception cref="AuthorizationException">Thrown if the client is not authenticated.</exception>
+        /// <returns>A <see cref="IReadOnlyPagedCollection{Repository}"/> of <see cref="Repository"/>.</returns>
+        public IObservable<Repository> GetAllForCurrent(RepositoryRequest request)
+        {
+            Ensure.ArgumentNotNull(request, "request");
+
+            return _connection.GetAndFlattenAllPages<Repository>(ApiUrls.Repositories(), request.ToParametersDictionary());
         }
 
         /// <summary>
@@ -131,28 +190,15 @@ namespace Octokit.Reactive
         }
 
         /// <summary>
-        /// Returns the HTML rendered README.
+        /// A client for GitHub's Commit Status API.
         /// </summary>
-        /// <param name="owner">The owner of the repository</param>
-        /// <param name="name">The name of the repository</param>
-        /// <returns></returns>
-        [Obsolete("This method has been obsoleted by Content.GetReadme. Please use that instead.")]
-        public IObservable<Readme> GetReadme(string owner, string name)
-        {
-            return _client.Content.GetReadme(owner, name).ToObservable();
-        }
-
-        /// <summary>
-        /// Returns just the HTML portion of the README without the surrounding HTML document. 
-        /// </summary>
-        /// <param name="owner">The owner of the repository</param>
-        /// <param name="name">The name of the repository</param>
-        /// <returns></returns>
-        [Obsolete("This method has been obsoleted by Content.GetReadmeHtml. Please use that instead.")]
-        public IObservable<string> GetReadmeHtml(string owner, string name)
-        {
-            return _client.Content.GetReadmeHtml(owner, name).ToObservable();
-        }
+        /// <remarks>
+        /// See the <a href="http://developer.github.com/v3/repos/statuses/">Commit Status API documentation</a> for more
+        /// details. Also check out the <a href="https://github.com/blog/1227-commit-status-api">blog post</a> 
+        /// that announced this feature.
+        /// </remarks>
+        [Obsolete("Use Status instead")]
+        public IObservableCommitStatusClient CommitStatus { get { return Status; } }
 
         /// <summary>
         /// A client for GitHub's Commit Status API.
@@ -162,7 +208,7 @@ namespace Octokit.Reactive
         /// details. Also check out the <a href="https://github.com/blog/1227-commit-status-api">blog post</a> 
         /// that announced this feature.
         /// </remarks>
-        public IObservableCommitStatusClient CommitStatus { get; private set; }
+        public IObservableCommitStatusClient Status { get; private set; }
 
         /// <summary>
         /// Client for GitHub's Repository Deployments API
@@ -186,7 +232,28 @@ namespace Octokit.Reactive
         /// <remarks>
         /// See the <a href="http://developer.github.com/v3/repos/comments/">Repository Comments API documentation</a> for more information.
         /// </remarks>
+        [Obsolete("Comment information is now available under the Comment property. This will be removed in a future update.")]
         public IObservableRepositoryCommentsClient RepositoryComments { get; private set; }
+
+        /// <summary>
+        /// Client for GitHub's Repository Comments API.
+        /// </summary>
+        /// <remarks>
+        /// See the <a href="http://developer.github.com/v3/repos/comments/">Repository Comments API documentation</a> for more information.
+        /// </remarks>
+        public IObservableRepositoryCommentsClient Comment { get; private set; }
+
+        /// <summary>
+        /// A client for GitHub's Repository Hooks API.
+        /// </summary>
+        /// <remarks>See <a href="http://developer.github.com/v3/repos/hooks/">Hooks API documentation</a> for more information.</remarks>
+        public IObservableRepositoryHooksClient Hooks { get; private set; }
+
+        /// <summary>
+        /// A client for GitHub's Repository Forks API.
+        /// </summary>
+        /// <remarks>See <a href="http://developer.github.com/v3/repos/forks/">Forks API documentation</a> for more information.</remarks>        
+        public IObservableRepositoryForksClient Forks { get; private set; }
 
         /// <summary>
         /// Client for GitHub's Repository Contents API.
@@ -195,6 +262,15 @@ namespace Octokit.Reactive
         /// See the <a href="http://developer.github.com/v3/repos/contents/">Repository Contents API documentation</a> for more information.
         /// </remarks>
         public IObservableRepositoryContentsClient Content { get; private set; }
+
+
+        /// <summary>
+        /// Client for GitHub's Repository Merging API
+        /// </summary>
+        /// <remarks>
+        /// See the <a href="https://developer.github.com/v3/repos/merging/">Merging API documentation</a> for more details
+        ///</remarks>
+        public IObservableMergingClient Merging { get; private set; }
 
         /// <summary>
         /// Gets all the branches for the specified repository.
@@ -243,7 +319,7 @@ namespace Octokit.Reactive
         {
             Ensure.ArgumentNotNullOrEmptyString(owner, "owner");
             Ensure.ArgumentNotNullOrEmptyString(name, "name");
-           
+
             var endpoint = ApiUrls.RepositoryContributors(owner, name);
             var parameters = new Dictionary<string, string>();
             if (includeAnonymous)
@@ -285,7 +361,7 @@ namespace Octokit.Reactive
         {
             Ensure.ArgumentNotNullOrEmptyString(owner, "owner");
             Ensure.ArgumentNotNullOrEmptyString(name, "name");
-            
+
             var endpoint = ApiUrls.RepositoryTeams(owner, name);
             return _connection.GetAndFlattenAllPages<Team>(endpoint);
         }
@@ -336,6 +412,19 @@ namespace Octokit.Reactive
         }
 
         /// <summary>
+        /// Edit the specified branch with the values given in <paramref name="update"/>
+        /// </summary>
+        /// <param name="owner">The owner of the repository</param>
+        /// <param name="name">The name of the repository</param>
+        /// <param name="branch">The name of the branch</param>
+        /// <param name="update">New values to update the branch with</param>
+        /// <returns>The updated <see cref="T:Octokit.Branch"/></returns>
+        public IObservable<Branch> EditBranch(string owner, string name, string branch, BranchUpdate update)
+        {
+            return _client.EditBranch(owner, name, branch, update).ToObservable();
+        }
+
+        /// <summary>
         /// Compare two references in a repository
         /// </summary>
         /// <param name="owner">The owner of the repository</param>
@@ -345,7 +434,7 @@ namespace Octokit.Reactive
         /// <returns></returns>
         public IObservable<CompareResult> Compare(string owner, string name, string @base, string head)
         {
-            return _client.Commits.Compare(owner, name, @base, head).ToObservable();
+            return _client.Commit.Compare(owner, name, @base, head).ToObservable();
         }
 
         /// <summary>
@@ -354,7 +443,16 @@ namespace Octokit.Reactive
         /// <remarks>
         /// See the <a href="http://developer.github.com/v3/repos/collaborators/">Collaborators API documentation</a> for more details
         /// </remarks>
+        [Obsolete("Collaborator information is now available under the Collaborator property. This will be removed in a future update.")]
         public IObservableRepoCollaboratorsClient RepoCollaborators { get; private set; }
+
+        /// <summary>
+        /// A client for GitHub's Repo Collaborators.
+        /// </summary>
+        /// <remarks>
+        /// See the <a href="http://developer.github.com/v3/repos/collaborators/">Collaborators API documentation</a> for more details
+        /// </remarks>
+        public IObservableRepoCollaboratorsClient Collaborator { get; private set; }
 
         /// <summary>
         /// Client for GitHub's Repository Commits API
@@ -362,7 +460,24 @@ namespace Octokit.Reactive
         /// <remarks>
         /// See the <a href="http://developer.github.com/v3/repos/commits/">Commits API documentation</a> for more details
         ///</remarks>
+        [Obsolete("Commit information is now available under the Commit property. This will be removed in a future update.")]
         public IObservableRepositoryCommitsClient Commits { get; private set; }
+
+        /// <summary>
+        /// Client for GitHub's Repository Commits API
+        /// </summary>
+        /// <remarks>
+        /// See the <a href="http://developer.github.com/v3/repos/commits/">Commits API documentation</a> for more details
+        ///</remarks>
+        public IObservableRepositoryCommitsClient Commit { get; private set; }
+
+        /// <summary>
+        /// Access GitHub's Releases API.
+        /// </summary>
+        /// <remarks>
+        /// Refer to the API docmentation for more information: https://developer.github.com/v3/repos/releases/
+        /// </remarks>
+        public IObservableReleasesClient Release { get; private set; }
 
         /// <summary>
         /// Client for managing pull requests.
@@ -379,5 +494,12 @@ namespace Octokit.Reactive
         /// See the <a href="https://developer.github.com/v3/repos/keys/">Repository Deploy Keys API documentation</a> for more information.
         /// </remarks>
         public IObservableRepositoryDeployKeysClient DeployKeys { get; private set; }
+        /// <summary>
+        /// A client for GitHub's Repository Pages API.
+        /// </summary>
+        /// <remarks>
+        /// See the <a href="https://developer.github.com/v3/repos/pages/">Repository Pages API documentation</a> for more information.
+        /// </remarks>
+        public IObservableRepositoryPagesClient Page { get; private set; }
     }
 }

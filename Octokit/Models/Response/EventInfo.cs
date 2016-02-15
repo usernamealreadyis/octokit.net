@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Diagnostics;
-using System.Globalization;
 using System.Diagnostics.CodeAnalysis;
+using System.Globalization;
 
 namespace Octokit
 {
@@ -66,7 +66,7 @@ namespace Octokit
         {
             get
             {
-                return String.Format(CultureInfo.InvariantCulture, "Id: {0} CreatedAt: {1}", Id, CreatedAt);
+                return string.Format(CultureInfo.InvariantCulture, "Id: {0} CreatedAt: {1}", Id, CreatedAt);
             }
         }
     }
@@ -161,5 +161,10 @@ namespace Octokit
         /// The pull request’s branch was restored.
         /// </summary>
         HeadRefRestored,
+
+        /// <summary>
+        /// The actor unsubscribed from notifications for an issue.
+        /// </summary>
+        Unsubscribed
     }
 }

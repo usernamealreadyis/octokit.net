@@ -37,7 +37,7 @@ namespace Octokit.Internal
                 foreach (var property in propertiesAndFields.Where(p => p.SerializeNull))
                 {
                     var key = type.FullName + "-" + property.JsonFieldName;
-                    
+
                     _membersWhichShouldPublishNull.Add(key);
                 }
 
@@ -81,16 +81,19 @@ namespace Octokit.Internal
                 return p.ToString().ToLowerInvariant();
             }
 
+            private string _type;
+
             // Overridden to handle enums.
             public override object DeserializeObject(object value, Type type)
             {
                 var stringValue = value as string;
+                var jsonValue = value as JsonObject;
                 if (stringValue != null)
                 {
                     if (ReflectionUtils.GetTypeInfo(type).IsEnum)
                     {
                         // remove '-' from values coming in to be able to enum utf-8
-                        stringValue = stringValue.Replace("-", "");
+                        stringValue = RemoveHyphenAndUnderscore(stringValue);
                         return Enum.Parse(type, stringValue, ignoreCase: true);
                     }
 
@@ -99,6 +102,7 @@ namespace Octokit.Internal
                         var underlyingType = Nullable.GetUnderlyingType(type);
                         if (ReflectionUtils.GetTypeInfo(underlyingType).IsEnum)
                         {
+                            stringValue = RemoveHyphenAndUnderscore(stringValue);
                             return Enum.Parse(underlyingType, stringValue, ignoreCase: true);
                         }
                     }
@@ -114,8 +118,30 @@ namespace Octokit.Internal
                         }
                     }
                 }
+                else if (jsonValue != null)
+                {
+                    if (type == typeof(Activity))
+                    {
+                        _type = jsonValue["type"].ToString();
+                    }
+                }
+
+                if (type == typeof(ActivityPayload))
+                {
+                    var payloadType = GetPayloadType(_type);
+                    return base.DeserializeObject(value, payloadType);
+                }
 
                 return base.DeserializeObject(value, type);
+            }
+
+            static string RemoveHyphenAndUnderscore(string stringValue)
+            {
+                // remove '-' from values coming in to be able to enum utf-8
+                stringValue = stringValue.Replace("-", "");
+                // remove '-' from values coming in to be able to enum EventInfoState names with underscores in them. Like "head_ref_deleted" 
+                stringValue = stringValue.Replace("_", "");
+                return stringValue;
             }
 
             internal override IDictionary<string, KeyValuePair<Type, ReflectionUtils.SetDelegate>> SetterValueFactory(Type type)
@@ -125,6 +151,30 @@ namespace Octokit.Internal
                     .ToDictionary(
                         p => p.JsonFieldName,
                         p => new KeyValuePair<Type, ReflectionUtils.SetDelegate>(p.Type, p.SetDelegate));
+            }
+
+            private static Type GetPayloadType(string activityType)
+            {
+                switch (activityType)
+                {
+                    case "CommitCommentEvent":
+                        return typeof(CommitCommentPayload);
+                    case "ForkEvent":
+                        return typeof(ForkEventPayload);
+                    case "IssueCommentEvent":
+                        return typeof(IssueCommentPayload);
+                    case "IssuesEvent":
+                        return typeof(IssueEventPayload);
+                    case "PullRequestEvent":
+                        return typeof(PullRequestEventPayload);
+                    case "PullRequestReviewCommentEvent":
+                        return typeof(PullRequestCommentPayload);
+                    case "PushEvent":
+                        return typeof(PushEventPayload);
+                    case "WatchEvent":
+                        return typeof(StarredEventPayload);
+                }
+                return typeof(ActivityPayload);
             }
         }
     }

@@ -1,5 +1,8 @@
 ﻿using Octokit.Helpers;
 using Octokit.Internal;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
 using Xunit;
 
 namespace Octokit.Tests
@@ -65,6 +68,33 @@ namespace Octokit.Tests
             }
 
             [Fact]
+            public void HandleUnicodeCharacters()
+            {
+                const string backspace = "\b";
+                const string tab = "\t";
+
+                var sb = new StringBuilder();
+                sb.Append("My name has Unicode characters");
+                Enumerable.Range(0, 19).Select(e => System.Convert.ToChar(e))
+                .Aggregate(sb, (a, b) => a.Append(b));
+                sb.Append(backspace).Append(tab);
+                var data = sb.ToString();
+
+                var json = new SimpleJsonSerializer().Serialize(data);
+                var lastTabCharacter = (json
+                        .Reverse()
+                        .Skip(1)
+                        .Take(2)
+                        .Reverse()
+                    .Aggregate(new StringBuilder(), (a, b) => a.Append(b)));
+
+                var deserializeData = new SimpleJsonSerializer().Deserialize<string>(json);
+
+                Assert.True(lastTabCharacter.ToString().Equals("\\t"));
+                Assert.Equal(data, deserializeData);
+            }
+
+            [Fact]
             public void HandlesBase64EncodedStrings()
             {
                 var item = new SomeObject
@@ -80,8 +110,44 @@ namespace Octokit.Tests
             }
         }
 
+
         public class TheDeserializeMethod
         {
+            [Fact]
+            public void DeserializesEventInfosWithUnderscoresInName()
+            {
+                const string json = "{\"event\":\"head_ref_deleted\"}";
+                new SimpleJsonSerializer().Deserialize<EventInfo>(json);
+            }
+
+            public class MessageSingle
+            {
+                public string Message { get; private set; }
+            }
+
+            [Fact]
+            public void DeserializesStringsWithHyphensAndUnderscoresIntoString()
+            {
+                const string json = @"{""message"":""-my-test-string_with_underscores_""}";
+
+                var response = new SimpleJsonSerializer().Deserialize<MessageSingle>(json);
+                Assert.Equal("-my-test-string_with_underscores_", response.Message);
+            }
+
+            public class MessageList
+            {
+                public IReadOnlyList<string> Message { get; private set; }
+            }
+
+            [Fact]
+            public void DeserializesStringsWithHyphensAndUnderscoresIntoStringList()
+            {
+                const string json = @"{""message"":""-my-test-string_with_underscores_""}";
+
+                var response = new SimpleJsonSerializer().Deserialize<MessageList>(json);
+                Assert.Equal("-my-test-string_with_underscores_", response.Message[0]);
+            }
+
             [Fact]
             public void UnderstandsRubyCasing()
             {

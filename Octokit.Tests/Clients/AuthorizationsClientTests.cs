@@ -4,7 +4,6 @@ using System.Net;
 using System.Threading.Tasks;
 using NSubstitute;
 using Octokit.Internal;
-using Octokit.Tests.Helpers;
 using Xunit;
 
 namespace Octokit.Tests.Clients
@@ -36,8 +35,7 @@ namespace Octokit.Tests.Clients
 
                 client.Received().GetAll<Authorization>(
                     Arg.Is<Uri>(u => u.ToString() == "authorizations"),
-                    null,
-                    Arg.Any<string>());
+                    null);
             }
         }
 
@@ -53,8 +51,7 @@ namespace Octokit.Tests.Clients
 
                 client.Received().Get<Authorization>(
                     Arg.Is<Uri>(u => u.ToString() == "authorizations/1"),
-                    null,
-                    Arg.Any<string>());
+                    null);
             }
         }
 
@@ -125,11 +122,11 @@ namespace Octokit.Tests.Clients
                 client.Put<ApplicationAuthorization>(Args.Uri, Args.Object, Args.String)
                     .ThrowsAsync<ApplicationAuthorization>(
                     new AuthorizationException(
-                        new Response(HttpStatusCode.Unauthorized , null, new Dictionary<string, string>(), "application/json")));
+                        new Response(HttpStatusCode.Unauthorized, null, new Dictionary<string, string>(), "application/json")));
                 var authEndpoint = new AuthorizationsClient(client);
 
-                await AssertEx.Throws<TwoFactorChallengeFailedException>(async () =>
-                    await authEndpoint.GetOrCreateApplicationAuthentication("clientId", "secret", data, "authenticationCode"));
+                await Assert.ThrowsAsync<TwoFactorChallengeFailedException>(() =>
+                    authEndpoint.GetOrCreateApplicationAuthentication("clientId", "secret", data, "authenticationCode"));
             }
 
             [Fact]
@@ -139,7 +136,7 @@ namespace Octokit.Tests.Clients
                 var data = new NewAuthorization { Note = "note" };
                 var client = Substitute.For<IAuthorizationsClient>();
                 client.GetOrCreateApplicationAuthentication("clientId", "secret", Arg.Any<NewAuthorization>())
-                    .Returns(_ => {throw new TwoFactorRequiredException();});
+                    .Returns<Task<ApplicationAuthorization>>(_ => { throw new TwoFactorRequiredException(); });
                 client.GetOrCreateApplicationAuthentication("clientId",
                     "secret",
                     Arg.Any<NewAuthorization>(),
@@ -163,7 +160,7 @@ namespace Octokit.Tests.Clients
             [Fact]
             public async Task RetriesWhenResendRequested()
             {
-                var challengeResults = new Queue<TwoFactorChallengeResult>(new []
+                var challengeResults = new Queue<TwoFactorChallengeResult>(new[]
                 {
                     TwoFactorChallengeResult.RequestResendCode,
                     new TwoFactorChallengeResult("two-factor-code")
@@ -171,7 +168,7 @@ namespace Octokit.Tests.Clients
                 var data = new NewAuthorization();
                 var client = Substitute.For<IAuthorizationsClient>();
                 client.GetOrCreateApplicationAuthentication("clientId", "secret", Arg.Any<NewAuthorization>())
-                    .Returns(_ => { throw new TwoFactorRequiredException(); });
+                    .Returns<Task<ApplicationAuthorization>>(_ => { throw new TwoFactorRequiredException(); });
                 client.GetOrCreateApplicationAuthentication("clientId",
                     "secret",
                     Arg.Any<NewAuthorization>(),
@@ -199,19 +196,19 @@ namespace Octokit.Tests.Clients
                 var challengeResults = new Queue<TwoFactorChallengeResult>(new[]
                 {
                     TwoFactorChallengeResult.RequestResendCode,
-                    new TwoFactorChallengeResult("wrong-code") 
+                    new TwoFactorChallengeResult("wrong-code")
                 });
                 var data = new NewAuthorization();
                 var client = Substitute.For<IAuthorizationsClient>();
                 client.GetOrCreateApplicationAuthentication("clientId", "secret", Arg.Any<NewAuthorization>())
-                    .Returns(_ => { throw new TwoFactorRequiredException(); });
+                    .Returns<Task<ApplicationAuthorization>>(_ => { throw new TwoFactorRequiredException(); });
                 client.GetOrCreateApplicationAuthentication("clientId",
                     "secret",
                     Arg.Any<NewAuthorization>(),
                     "wrong-code")
-                    .Returns(_ => { throw new TwoFactorChallengeFailedException(); });
-                
-                var exception = await AssertEx.Throws<TwoFactorChallengeFailedException>(() =>
+                    .Returns<Task<ApplicationAuthorization>>(_ => { throw new TwoFactorChallengeFailedException(); });
+
+                var exception = await Assert.ThrowsAsync<TwoFactorChallengeFailedException>(() =>
                     client.GetOrCreateApplicationAuthentication(
                         "clientId",
                         "secret",
@@ -231,16 +228,130 @@ namespace Octokit.Tests.Clients
             [Fact]
             public async Task GetsOrCreatesAuthenticationWithFingerprintAtCorrectUrl()
             {
-                var data = new NewAuthorization { Fingerprint = "ha-ha-fingerprint"};
+                var data = new NewAuthorization { Fingerprint = "ha-ha-fingerprint" };
                 var client = Substitute.For<IApiConnection>();
                 var authEndpoint = new AuthorizationsClient(client);
 
+                Uri calledUri = null;
+                dynamic calledBody = null;
+
+                client.Put<ApplicationAuthorization>(Arg.Do<Uri>(u => calledUri = u), Arg.Do<object>(body => calledBody = body));
+
                 authEndpoint.GetOrCreateApplicationAuthentication("clientId", "secret", data);
 
-                client.Received().Put<ApplicationAuthorization>(Arg.Is<Uri>(u => u.ToString() == "authorizations/clients/clientId/ha-ha-fingerprint"),
-                    Args.Object,
-                    Args.String,
-                    Args.String); // NOTE: preview API
+                Assert.NotNull(calledUri);
+                Assert.Equal(calledUri.ToString(), "authorizations/clients/clientId");
+
+                Assert.NotNull(calledBody);
+                Assert.Equal(calledBody.fingerprint, "ha-ha-fingerprint");
+            }
+        }
+
+        public class TheCheckApplicationAuthenticationMethod
+        {
+            [Fact]
+            public async Task ChecksApplicationAuthenticateAtCorrectUrl()
+            {
+                var client = Substitute.For<IApiConnection>();
+                var authEndpoint = new AuthorizationsClient(client);
+
+                authEndpoint.CheckApplicationAuthentication("clientId", "accessToken");
+
+                client.Received().Get<ApplicationAuthorization>(
+                    Arg.Is<Uri>(u => u.ToString() == "applications/clientId/tokens/accessToken"),
+                    null);
+            }
+
+            [Fact]
+            public async Task EnsuresArgumentsNotNull()
+            {
+                var client = Substitute.For<IApiConnection>();
+                var authEndpoint = new AuthorizationsClient(client);
+
+                await Assert.ThrowsAsync<ArgumentNullException>(() => authEndpoint.CheckApplicationAuthentication(null, "accessToken"));
+                await Assert.ThrowsAsync<ArgumentException>(() => authEndpoint.CheckApplicationAuthentication("", "accessToken"));
+                await Assert.ThrowsAsync<ArgumentNullException>(() => authEndpoint.CheckApplicationAuthentication("clientId", null));
+                await Assert.ThrowsAsync<ArgumentException>(() => authEndpoint.CheckApplicationAuthentication("clientId", ""));
+            }
+        }
+
+        public class TheResetApplicationAuthenticationMethod
+        {
+            [Fact]
+            public async Task ResetsApplicationAuthenticationAtCorrectUrl()
+            {
+                var client = Substitute.For<IApiConnection>();
+                var authEndpoint = new AuthorizationsClient(client);
+
+                authEndpoint.ResetApplicationAuthentication("clientId", "accessToken");
+
+                client.Received().Post<ApplicationAuthorization>(
+                    Arg.Is<Uri>(u => u.ToString() == "applications/clientId/tokens/accessToken"),
+                    Args.Object);
+            }
+
+            [Fact]
+            public async Task EnsuresArgumentsNotNull()
+            {
+                var client = Substitute.For<IApiConnection>();
+                var authEndpoint = new AuthorizationsClient(client);
+
+                await Assert.ThrowsAsync<ArgumentNullException>(() => authEndpoint.ResetApplicationAuthentication(null, "accessToken"));
+                await Assert.ThrowsAsync<ArgumentException>(() => authEndpoint.ResetApplicationAuthentication("", "accessToken"));
+                await Assert.ThrowsAsync<ArgumentNullException>(() => authEndpoint.ResetApplicationAuthentication("clientId", null));
+                await Assert.ThrowsAsync<ArgumentException>(() => authEndpoint.ResetApplicationAuthentication("clientId", ""));
+            }
+        }
+
+        public class TheRevokeApplicationAuthenticationMethod
+        {
+            [Fact]
+            public async Task RevokesApplicatonAuthenticationAtCorrectUrl()
+            {
+                var client = Substitute.For<IApiConnection>();
+                var authEndpoint = new AuthorizationsClient(client);
+
+                authEndpoint.RevokeApplicationAuthentication("clientId", "accessToken");
+
+                client.Received().Delete(
+                    Arg.Is<Uri>(u => u.ToString() == "applications/clientId/tokens/accessToken"));
+            }
+
+            [Fact]
+            public async Task EnsuresArgumentsNotNull()
+            {
+                var client = Substitute.For<IApiConnection>();
+                var authEndpoint = new AuthorizationsClient(client);
+
+                await Assert.ThrowsAsync<ArgumentNullException>(() => authEndpoint.RevokeApplicationAuthentication(null, "accessToken"));
+                await Assert.ThrowsAsync<ArgumentException>(() => authEndpoint.RevokeApplicationAuthentication("", "accessToken"));
+                await Assert.ThrowsAsync<ArgumentNullException>(() => authEndpoint.RevokeApplicationAuthentication("clientId", null));
+                await Assert.ThrowsAsync<ArgumentException>(() => authEndpoint.RevokeApplicationAuthentication("clientId", ""));
+            }
+        }
+
+        public class TheRevokeAllApplicationAuthenticationsMethod
+        {
+            [Fact]
+            public async Task RevokesAllApplicationAuthenticationsAtCorrectUrl()
+            {
+                var client = Substitute.For<IApiConnection>();
+                var authEndpoint = new AuthorizationsClient(client);
+
+                authEndpoint.RevokeAllApplicationAuthentications("clientId");
+
+                client.Received().Delete(
+                    Arg.Is<Uri>(u => u.ToString() == "applications/clientId/tokens"));
+            }
+
+            [Fact]
+            public async Task EnsuresArgumentsNotNull()
+            {
+                var client = Substitute.For<IApiConnection>();
+                var authEndpoint = new AuthorizationsClient(client);
+
+                await Assert.ThrowsAsync<ArgumentNullException>(() => authEndpoint.RevokeAllApplicationAuthentications(null));
+                await Assert.ThrowsAsync<ArgumentException>(() => authEndpoint.RevokeAllApplicationAuthentications(""));
             }
         }
     }

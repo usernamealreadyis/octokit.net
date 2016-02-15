@@ -5,7 +5,7 @@ using System.Globalization;
 namespace Octokit
 {
     /// <summary>
-    /// User by <see cref="GistHistory"/> to indicate the level of change.
+    /// Used by <see cref="GistHistory"/> to indicate the level of change.
     /// </summary>
     [DebuggerDisplay("{DebuggerDisplay,nq}")]
     public class GistChangeStatus
@@ -36,7 +36,7 @@ namespace Octokit
 
         internal string DebuggerDisplay
         {
-            get { return String.Format(CultureInfo.InvariantCulture, "Deletions: {0}, Additions: {1}, Total: {2}", Deletions, Additions, Total); }
+            get { return string.Format(CultureInfo.InvariantCulture, "Deletions: {0}, Additions: {1}, Total: {2}", Deletions, Additions, Total); }
         }
     }
 }

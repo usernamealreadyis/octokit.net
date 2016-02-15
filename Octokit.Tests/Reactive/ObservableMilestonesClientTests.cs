@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Reactive.Linq;
+using System.Reactive.Threading.Tasks;
 using System.Threading.Tasks;
 using NSubstitute;
 using Octokit.Internal;
@@ -30,10 +31,10 @@ namespace Octokit.Tests.Reactive
             {
                 var client = new ObservableMilestonesClient(Substitute.For<IGitHubClient>());
 
-                await AssertEx.Throws<ArgumentNullException>(async () => await client.Get(null, "name", 1));
-                await AssertEx.Throws<ArgumentNullException>(async () => await client.Get("owner", null, 1));
-                await AssertEx.Throws<ArgumentException>(async () => await client.Get(null, "", 1));
-                await AssertEx.Throws<ArgumentException>(async () => await client.Get("", null, 1));
+                await Assert.ThrowsAsync<ArgumentNullException>(() => client.Get(null, "name", 1).ToTask());
+                await Assert.ThrowsAsync<ArgumentNullException>(() => client.Get("owner", null, 1).ToTask());
+                await Assert.ThrowsAsync<ArgumentNullException>(() => client.Get(null, "", 1).ToTask());
+                await Assert.ThrowsAsync<ArgumentException>(() => client.Get("", null, 1).ToTask());
             }
         }
 
@@ -44,7 +45,7 @@ namespace Octokit.Tests.Reactive
             {
                 var firstPageUrl = new Uri("repos/fake/repo/milestones", UriKind.Relative);
                 var secondPageUrl = new Uri("https://example.com/page/2");
-                var firstPageLinks = new Dictionary<string, Uri> {{"next", secondPageUrl}};
+                var firstPageLinks = new Dictionary<string, Uri> { { "next", secondPageUrl } };
                 var firstPageResponse = new ApiResponse<List<Milestone>>
                 (
                     CreateResponseWithApiInfo(firstPageLinks),
@@ -56,7 +57,7 @@ namespace Octokit.Tests.Reactive
                     }
                 );
                 var thirdPageUrl = new Uri("https://example.com/page/3");
-                var secondPageLinks = new Dictionary<string, Uri> {{"next", thirdPageUrl}};
+                var secondPageLinks = new Dictionary<string, Uri> { { "next", thirdPageUrl } };
                 var secondPageResponse = new ApiResponse<List<Milestone>>
                 (
                     CreateResponseWithApiInfo(secondPageLinks),
@@ -84,7 +85,7 @@ namespace Octokit.Tests.Reactive
                     .Returns(Task.Factory.StartNew<IApiResponse<List<Milestone>>>(() => lastPageResponse));
                 var client = new ObservableMilestonesClient(gitHubClient);
 
-                var results = await client.GetForRepository("fake", "repo").ToArray();
+                var results = await client.GetAllForRepository("fake", "repo").ToArray();
 
                 Assert.Equal(7, results.Length);
                 Assert.Equal(firstPageResponse.Body[0].Number, results[0].Number);
@@ -97,7 +98,7 @@ namespace Octokit.Tests.Reactive
             {
                 var firstPageUrl = new Uri("repos/fake/repo/milestones", UriKind.Relative);
                 var secondPageUrl = new Uri("https://example.com/page/2");
-                var firstPageLinks = new Dictionary<string, Uri> {{"next", secondPageUrl}};
+                var firstPageLinks = new Dictionary<string, Uri> { { "next", secondPageUrl } };
                 var firstPageResponse = new ApiResponse<List<Milestone>>
                 (
                     CreateResponseWithApiInfo(firstPageLinks),
@@ -109,7 +110,7 @@ namespace Octokit.Tests.Reactive
                     }
                 );
                 var thirdPageUrl = new Uri("https://example.com/page/3");
-                var secondPageLinks = new Dictionary<string, Uri> {{"next", thirdPageUrl}};
+                var secondPageLinks = new Dictionary<string, Uri> { { "next", thirdPageUrl } };
                 var secondPageResponse = new ApiResponse<List<Milestone>>
                 (
                     CreateResponseWithApiInfo(secondPageLinks),
@@ -141,7 +142,7 @@ namespace Octokit.Tests.Reactive
                     .Returns(Task.Factory.StartNew<IApiResponse<List<Milestone>>>(() => lastPageResponse));
                 var client = new ObservableMilestonesClient(gitHubClient);
 
-                var results = await client.GetForRepository("fake", "repo", new MilestoneRequest { SortDirection = SortDirection.Descending }).ToArray();
+                var results = await client.GetAllForRepository("fake", "repo", new MilestoneRequest { SortDirection = SortDirection.Descending }).ToArray();
 
                 Assert.Equal(7, results.Length);
                 Assert.Equal(firstPageResponse.Body[0].Number, results[0].Number);

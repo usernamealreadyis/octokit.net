@@ -11,7 +11,6 @@ namespace Octokit.Internal
         {
             Headers = new Dictionary<string, string>();
             Parameters = new Dictionary<string, string>();
-            AllowAutoRedirect = true;
             Timeout = TimeSpan.FromSeconds(100);
         }
 
@@ -23,6 +22,5 @@ namespace Octokit.Internal
         public Uri Endpoint { get; set; }
         public TimeSpan Timeout { get; set; }
         public string ContentType { get; set; }
-        public bool AllowAutoRedirect { get; set; }
     }
 }

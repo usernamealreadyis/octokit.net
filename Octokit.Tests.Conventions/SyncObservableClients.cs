@@ -1,12 +1,10 @@
 ﻿using System;
-using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reactive;
 using System.Reflection;
 using Octokit.Tests.Helpers;
 using Xunit;
-using Xunit.Extensions;
 
 namespace Octokit.Tests.Conventions
 {
@@ -22,13 +20,13 @@ namespace Octokit.Tests.Conventions
             var mainNames = Array.ConvertAll(mainMethods, m => m.Name);
             var observableNames = Array.ConvertAll(observableMethods, m => m.Name);
 
-            var methodsMissingOnReactiveClient = mainNames.Except(observableNames);
+            var methodsMissingOnReactiveClient = mainNames.Except(observableNames).ToList();
             if (methodsMissingOnReactiveClient.Any())
             {
                 throw new InterfaceMissingMethodsException(observableClient, methodsMissingOnReactiveClient);
             }
 
-            var additionalMethodsOnReactiveClient = observableNames.Except(mainNames);
+            var additionalMethodsOnReactiveClient = observableNames.Except(mainNames).ToList();
             if (additionalMethodsOnReactiveClient.Any())
             {
                 throw new InterfaceHasAdditionalMethodsException(observableClient, additionalMethodsOnReactiveClient);
@@ -40,7 +38,7 @@ namespace Octokit.Tests.Conventions
             }
 
             int index = 0;
-            foreach(var mainMethod in mainMethods)
+            foreach (var mainMethod in mainMethods)
             {
                 var observableMethod = observableMethods[index];
                 AssertEx.WithMessage(() => CheckMethod(mainMethod, observableMethod), "Invalid signature for " + observableMethod);
@@ -71,7 +69,7 @@ namespace Octokit.Tests.Conventions
         private static Type GetObservableExpectedType(Type mainType)
         {
             var typeInfo = mainType.GetTypeInfo();
-            switch(typeInfo.TypeCategory)
+            switch (typeInfo.TypeCategory)
             {
                 case TypeCategory.ClientInterface:
                     // client interface - IClient => IObservableClient
@@ -80,7 +78,7 @@ namespace Octokit.Tests.Conventions
                     // void - Task => IObservable<Unit>
                     return typeof(IObservable<Unit>);
                 case TypeCategory.GenericTask:
-                    // single item - Task<TResult> => IObservable<TResult>
+                // single item - Task<TResult> => IObservable<TResult>
                 case TypeCategory.ReadOnlyList:
                     // list - Task<IReadOnlyList<TResult>> => IObservable<TResult>
                     return typeof(IObservable<>).MakeGenericType(typeInfo.Type);
@@ -102,7 +100,7 @@ namespace Octokit.Tests.Conventions
             }
 
             int index = 0;
-            foreach(var mainParameter in mainParameters)
+            foreach (var mainParameter in mainParameters)
             {
                 var observableParameter = observableParameters[index];
                 if (mainParameter.Name != observableParameter.Name)
@@ -122,7 +120,12 @@ namespace Octokit.Tests.Conventions
 
         public static IEnumerable<object[]> GetClientInterfaces()
         {
-            return typeof(IEventsClient).Assembly.ExportedTypes.Where(TypeExtensions.IsClientInterface).Select(type => new[] { type });
+            return typeof(IEventsClient)
+                .Assembly
+                .ExportedTypes
+                .Where(TypeExtensions.IsClientInterface)
+                .Where(t => t != typeof(IStatisticsClient)) // This convention doesn't apply to this one type.
+                .Select(type => new[] { type });
         }
     }
 }

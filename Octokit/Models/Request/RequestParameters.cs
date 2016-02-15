@@ -1,13 +1,13 @@
 ﻿using System;
-#if !PORTABLE
-using System.Collections.Concurrent;
-#endif
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Linq;
 using System.Reflection;
 using Octokit.Internal;
+#if !PORTABLE
+using System.Collections.Concurrent;
+#endif
 
 namespace Octokit
 {
@@ -23,6 +23,10 @@ namespace Octokit
         static readonly ConcurrentDictionary<Type, List<PropertyParameter>> _propertiesMap =
             new ConcurrentDictionary<Type, List<PropertyParameter>>();
 #endif
+        /// <summary>
+        /// Converts the derived object into a dictionary that can be used to supply query string parameters.
+        /// </summary>
+        /// <returns></returns>
         public virtual IDictionary<string, string> ToParametersDictionary()
         {
             var map = _propertiesMap.GetOrAdd(GetType(), GetPropertyParametersForType);
@@ -50,7 +54,7 @@ namespace Octokit
                 return (prop, value) =>
                 {
                     var list = ((IEnumerable<string>)value).ToArray();
-                    return !list.Any() ? null : String.Join(",", list);
+                    return !list.Any() ? null : string.Join(",", list);
                 };
             }
 
@@ -72,7 +76,7 @@ namespace Octokit
                 {
                     if (value == null) return null;
                     string attributeValue;
-                    
+
                     return enumToAttributeDictionary.TryGetValue(value.ToString(), out attributeValue)
                         ? attributeValue ?? value.ToString().ToLowerInvariant()
                         : value.ToString().ToLowerInvariant();

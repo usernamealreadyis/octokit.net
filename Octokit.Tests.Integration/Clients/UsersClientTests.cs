@@ -18,6 +18,18 @@ public class UsersClientTests
             var user = await github.User.Get("tclem");
 
             Assert.Equal("GitHub", user.Company);
+            Assert.Equal(AccountType.User, user.Type);
+        }
+
+        [IntegrationTest]
+        public async Task ReturnsSpecifiedOrganization()
+        {
+            var github = Helper.GetAuthenticatedClient();
+
+            var user = await github.User.Get("octokit");
+
+            Assert.Null(user.Company);
+            Assert.Equal(AccountType.Organization, user.Type);
         }
 
         [IntegrationTest]
@@ -50,6 +62,7 @@ public class UsersClientTests
             var user = await github.User.Current();
 
             Assert.Equal(Helper.UserName, user.Login);
+            Assert.Equal(AccountType.User, user.Type);
         }
     }
 
@@ -66,8 +79,7 @@ public class UsersClientTests
                 Bio = "UPDATED BIO"
             };
 
-            var e = await AssertEx.Throws<AuthorizationException>(async 
-                () => await github.User.Update(userUpdate));
+            var e = await Assert.ThrowsAsync<AuthorizationException>(() => github.User.Update(userUpdate));
             Assert.Equal(HttpStatusCode.Unauthorized, e.StatusCode);
         }
 
@@ -82,8 +94,7 @@ public class UsersClientTests
                 Bio = "UPDATED BIO"
             };
 
-            var e = await AssertEx.Throws<AuthorizationException>(async 
-                () => await github.User.Update(userUpdate));
+            var e = await Assert.ThrowsAsync<AuthorizationException>(() => github.User.Update(userUpdate));
             Assert.Equal(HttpStatusCode.Unauthorized, e.StatusCode);
         }
     }

@@ -30,9 +30,9 @@ namespace Octokit.Internal
 
             if (!request.Headers.ContainsKey("Accept"))
             {
-                request.Headers["Accept"] = "application/vnd.github.v3+json; charset=utf-8";
+                request.Headers["Accept"] = AcceptHeaders.RedirectsPreviewThenStableVersionJson;
             }
-            
+
             if (request.Method == HttpMethod.Get || request.Body == null) return;
             if (request.Body is string || request.Body is Stream || request.Body is HttpContent) return;
 
@@ -47,15 +47,15 @@ namespace Octokit.Internal
             {
                 var body = response.Body as string;
                 // simple json does not support the root node being empty. Will submit a pr but in the mean time....
-                if (!String.IsNullOrEmpty(body) && body != "{}")
+                if (!string.IsNullOrEmpty(body) && body != "{}")
                 {
                     var typeIsDictionary = typeof(IDictionary).IsAssignableFrom(typeof(T));
                     var typeIsEnumerable = typeof(IEnumerable).IsAssignableFrom(typeof(T));
-                    var responseIsArray = body.StartsWith("{", StringComparison.Ordinal);
+                    var responseIsObject = body.StartsWith("{", StringComparison.Ordinal);
 
                     // If we're expecting an array, but we get a single object, just wrap it.
                     // This supports an api that dynamically changes the return type based on the content.
-                    if (!typeIsDictionary && typeIsEnumerable && responseIsArray)
+                    if (!typeIsDictionary && typeIsEnumerable && responseIsObject)
                     {
                         body = "[" + body + "]";
                     }

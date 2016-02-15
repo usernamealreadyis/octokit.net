@@ -1,7 +1,7 @@
 ﻿#if NET_45
+using System.Threading.Tasks;
 using System.Collections.Generic;
 #endif
-using System.Threading.Tasks;
 
 namespace Octokit
 {
@@ -37,7 +37,7 @@ namespace Octokit
             Ensure.ArgumentNotNullOrEmptyString(name, "repository");
 
             var endpoint = ApiUrls.Releases(owner, name);
-            return ApiConnection.GetAll<Release>(endpoint, null, "application/vnd.github.v3");
+            return ApiConnection.GetAll<Release>(endpoint, null, AcceptHeaders.StableVersion);
         }
 
         /// <summary>
@@ -61,6 +61,25 @@ namespace Octokit
         }
 
         /// <summary>
+        /// Gets the latest <see cref="Release"/> for the specified repository.
+        /// </summary>
+        /// <remarks>
+        /// See the <a href="https://developer.github.com/v3/repos/releases/#get-the-latest-release">API documentation</a> for more information.
+        /// </remarks>
+        /// <param name="owner">The repository's owner</param>
+        /// <param name="name">The repository's name</param>
+        /// <exception cref="ApiException">Thrown when a general API error occurs.</exception>
+        /// <returns>The latest <see cref="Release"/> specified by the repository</returns>
+        public Task<Release> GetLatest(string owner, string name)
+        {
+            Ensure.ArgumentNotNullOrEmptyString(owner, "owner");
+            Ensure.ArgumentNotNullOrEmptyString(name, "name");
+
+            var endpoint = ApiUrls.LatestRelease(owner, name);
+            return ApiConnection.Get<Release>(endpoint);
+        }
+
+        /// <summary>
         /// Creates a new <see cref="Release"/> for the specified repository.
         /// </summary>
         /// <remarks>
@@ -78,7 +97,7 @@ namespace Octokit
             Ensure.ArgumentNotNull(data, "data");
 
             var endpoint = ApiUrls.Releases(owner, name);
-            return ApiConnection.Post<Release>(endpoint, data, "application/vnd.github.v3");
+            return ApiConnection.Post<Release>(endpoint, data, AcceptHeaders.StableVersion);
         }
 
         /// <summary>
@@ -134,13 +153,13 @@ namespace Octokit
         /// <param name="id">The id of the <see cref="Release"/>.</param>
         /// <exception cref="ApiException">Thrown when a general API error occurs.</exception>
         /// <returns>The list of <see cref="ReleaseAsset"/> for the specified release of the specified repository.</returns>
-        public Task<IReadOnlyList<ReleaseAsset>> GetAssets(string owner, string name, int id)
+        public Task<IReadOnlyList<ReleaseAsset>> GetAllAssets(string owner, string name, int id)
         {
             Ensure.ArgumentNotNullOrEmptyString(owner, "owner");
             Ensure.ArgumentNotNullOrEmptyString(name, "name");
 
             var endpoint = ApiUrls.ReleaseAssets(owner, name, id);
-            return ApiConnection.GetAll<ReleaseAsset>(endpoint, null, "application/vnd.github.v3");
+            return ApiConnection.GetAll<ReleaseAsset>(endpoint, null, AcceptHeaders.StableVersion);
         }
 
         /// <summary>
@@ -165,7 +184,7 @@ namespace Octokit
                 return ApiConnection.Post<ReleaseAsset>(
                     endpoint,
                     data.RawData,
-                    "application/vnd.github.v3",
+                    AcceptHeaders.StableVersion,
                     data.ContentType,
                     data.Timeout.GetValueOrDefault());
             }
@@ -173,7 +192,7 @@ namespace Octokit
             return ApiConnection.Post<ReleaseAsset>(
                 endpoint,
                 data.RawData,
-                "application/vnd.github.v3",
+                AcceptHeaders.StableVersion,
                 data.ContentType);
         }
 

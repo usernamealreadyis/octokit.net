@@ -1,6 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Reactive.Linq;
+using System.Reactive.Threading.Tasks;
 using System.Threading.Tasks;
 using NSubstitute;
 using Octokit.Internal;
@@ -30,10 +32,10 @@ namespace Octokit.Tests.Reactive
             {
                 var client = new ObservablePullRequestsClient(Substitute.For<IGitHubClient>());
 
-                await AssertEx.Throws<ArgumentNullException>(async () => await client.Get(null, "name", 1));
-                await AssertEx.Throws<ArgumentNullException>(async () => await client.Get("owner", null, 1));
-                await AssertEx.Throws<ArgumentException>(async () => await client.Get(null, "", 1));
-                await AssertEx.Throws<ArgumentException>(async () => await client.Get("", null, 1));
+                await Assert.ThrowsAsync<ArgumentNullException>(() => client.Get(null, "name", 1).ToTask());
+                await Assert.ThrowsAsync<ArgumentNullException>(() => client.Get("owner", null, 1).ToTask());
+                await Assert.ThrowsAsync<ArgumentNullException>(() => client.Get(null, "", 1).ToTask());
+                await Assert.ThrowsAsync<ArgumentException>(() => client.Get("", null, 1).ToTask());
             }
         }
 
@@ -84,7 +86,7 @@ namespace Octokit.Tests.Reactive
                     .Returns(Task.Factory.StartNew<IApiResponse<List<PullRequest>>>(() => lastPageResponse));
                 var client = new ObservablePullRequestsClient(gitHubClient);
 
-                var results = client.GetForRepository("fake", "repo").ToArray().Wait();
+                var results = client.GetAllForRepository("fake", "repo").ToArray().Wait();
 
                 Assert.Equal(7, results.Length);
                 Assert.Equal(firstPageResponse.Body[0].Number, results[0].Number);
@@ -130,10 +132,12 @@ namespace Octokit.Tests.Reactive
                 );
                 var gitHubClient = Substitute.For<IGitHubClient>();
                 gitHubClient.Connection.Get<List<PullRequest>>(Arg.Is(firstPageUrl),
-                    Arg.Is<Dictionary<string, string>>(d => d.Count == 3
+                    Arg.Is<Dictionary<string, string>>(d => d.Count == 5
                         && d["head"] == "user:ref-name"
                         && d["state"] == "open"
-                        && d["base"] == "fake_base_branch"), Arg.Any<string>())
+                        && d["base"] == "fake_base_branch"
+                        && d["sort"] == "created"
+                        && d["direction"] == "desc"), Arg.Any<string>())
                     .Returns(Task.Factory.StartNew<IApiResponse<List<PullRequest>>>(() => firstPageResponse));
                 gitHubClient.Connection.Get<List<PullRequest>>(secondPageUrl, null, null)
                     .Returns(Task.Factory.StartNew<IApiResponse<List<PullRequest>>>(() => secondPageResponse));
@@ -141,7 +145,7 @@ namespace Octokit.Tests.Reactive
                     .Returns(Task.Factory.StartNew<IApiResponse<List<PullRequest>>>(() => lastPageResponse));
                 var client = new ObservablePullRequestsClient(gitHubClient);
 
-                var results = client.GetForRepository("fake", "repo", new PullRequestRequest { Head = "user:ref-name", Base = "fake_base_branch" }).ToArray().Wait();
+                var results = client.GetAllForRepository("fake", "repo", new PullRequestRequest { Head = "user:ref-name", Base = "fake_base_branch" }).ToArray().Wait();
 
                 Assert.Equal(7, results.Length);
                 Assert.Equal(firstPageResponse.Body[0].Number, results[0].Number);
@@ -170,16 +174,16 @@ namespace Octokit.Tests.Reactive
                 var gitHubClient = Substitute.For<IGitHubClient>();
                 var client = new ObservablePullRequestsClient(gitHubClient);
 
-                await AssertEx.Throws<ArgumentNullException>(async () => await
-                    client.Create(null, "name", new NewPullRequest("title", "ref", "ref2")));
-                await AssertEx.Throws<ArgumentException>(async () => await
-                    client.Create("", "name", new NewPullRequest("title", "ref", "ref2")));
-                await AssertEx.Throws<ArgumentNullException>(async () => await
-                    client.Create("owner", null, new NewPullRequest("title", "ref", "ref2")));
-                await AssertEx.Throws<ArgumentException>(async () => await
-                    client.Create("owner", "", new NewPullRequest("title", "ref", "ref2")));
-                await AssertEx.Throws<ArgumentNullException>(async () => await
-                    client.Create("owner", "name", null));
+                await Assert.ThrowsAsync<ArgumentNullException>(() =>
+                    client.Create(null, "name", new NewPullRequest("title", "ref", "ref2")).ToTask());
+                await Assert.ThrowsAsync<ArgumentException>(() =>
+                    client.Create("", "name", new NewPullRequest("title", "ref", "ref2")).ToTask());
+                await Assert.ThrowsAsync<ArgumentNullException>(() =>
+                    client.Create("owner", null, new NewPullRequest("title", "ref", "ref2")).ToTask());
+                await Assert.ThrowsAsync<ArgumentException>(() =>
+                    client.Create("owner", "", new NewPullRequest("title", "ref", "ref2")).ToTask());
+                await Assert.ThrowsAsync<ArgumentNullException>(() =>
+                    client.Create("owner", "name", null).ToTask());
             }
         }
 
@@ -203,16 +207,16 @@ namespace Octokit.Tests.Reactive
                 var gitHubClient = Substitute.For<IGitHubClient>();
                 var client = new ObservablePullRequestsClient(gitHubClient);
 
-                await AssertEx.Throws<ArgumentNullException>(async () => await
-                    client.Create(null, "name", new NewPullRequest("title", "ref", "ref2")));
-                await AssertEx.Throws<ArgumentException>(async () => await
-                    client.Create("", "name", new NewPullRequest("title", "ref", "ref2")));
-                await AssertEx.Throws<ArgumentNullException>(async () => await
-                    client.Create("owner", null, new NewPullRequest("title", "ref", "ref2")));
-                await AssertEx.Throws<ArgumentException>(async () => await
-                    client.Create("owner", "", new NewPullRequest("title", "ref", "ref2")));
-                await AssertEx.Throws<ArgumentNullException>(async () => await
-                    client.Create("owner", "name", null));
+                await Assert.ThrowsAsync<ArgumentNullException>(() =>
+                    client.Create(null, "name", new NewPullRequest("title", "ref", "ref2")).ToTask());
+                await Assert.ThrowsAsync<ArgumentException>(() =>
+                    client.Create("", "name", new NewPullRequest("title", "ref", "ref2")).ToTask());
+                await Assert.ThrowsAsync<ArgumentNullException>(() =>
+                    client.Create("owner", null, new NewPullRequest("title", "ref", "ref2")).ToTask());
+                await Assert.ThrowsAsync<ArgumentException>(() =>
+                    client.Create("owner", "", new NewPullRequest("title", "ref", "ref2")).ToTask());
+                await Assert.ThrowsAsync<ArgumentNullException>(() =>
+                    client.Create("owner", "name", null).ToTask());
             }
         }
 
@@ -221,7 +225,7 @@ namespace Octokit.Tests.Reactive
             [Fact]
             public void MergesPullRequest()
             {
-                var mergePullRequest = new MergePullRequest("fake commit message");
+                var mergePullRequest = new MergePullRequest { CommitMessage = "fake commit message" };
                 var gitHubClient = Substitute.For<IGitHubClient>();
                 var client = new ObservablePullRequestsClient(gitHubClient);
 
@@ -236,11 +240,11 @@ namespace Octokit.Tests.Reactive
                 var connection = Substitute.For<IApiConnection>();
                 var client = new PullRequestsClient(connection);
 
-                await AssertEx.Throws<ArgumentNullException>(async () => await
-                    client.Merge(null, "name", 42, new MergePullRequest("message")));
-                await AssertEx.Throws<ArgumentNullException>(async () => await
-                    client.Merge("owner", null, 42, new MergePullRequest("message")));
-                await AssertEx.Throws<ArgumentNullException>(async () => await
+                await Assert.ThrowsAsync<ArgumentNullException>(() =>
+                    client.Merge(null, "name", 42, new MergePullRequest { CommitMessage = "message" }));
+                await Assert.ThrowsAsync<ArgumentNullException>(() =>
+                    client.Merge("owner", null, 42, new MergePullRequest { CommitMessage = "message" }));
+                await Assert.ThrowsAsync<ArgumentNullException>(() =>
                     client.Merge("owner", "name", 42, null));
             }
         }
@@ -264,10 +268,10 @@ namespace Octokit.Tests.Reactive
                 var connection = Substitute.For<IApiConnection>();
                 var client = new PullRequestsClient(connection);
 
-                await AssertEx.Throws<ArgumentNullException>(async () => await client.Merged(null, "name", 1));
-                await AssertEx.Throws<ArgumentNullException>(async () => await client.Merged("owner", null, 1));
-                await AssertEx.Throws<ArgumentException>(async () => await client.Merged(null, "", 1));
-                await AssertEx.Throws<ArgumentException>(async () => await client.Merged("", null, 1));
+                await Assert.ThrowsAsync<ArgumentNullException>(() => client.Merged(null, "name", 1));
+                await Assert.ThrowsAsync<ArgumentNullException>(() => client.Merged("owner", null, 1));
+                await Assert.ThrowsAsync<ArgumentNullException>(() => client.Merged(null, "", 1));
+                await Assert.ThrowsAsync<ArgumentException>(() => client.Merged("", null, 1));
             }
         }
 
@@ -276,7 +280,7 @@ namespace Octokit.Tests.Reactive
             [Fact]
             public async Task FetchesAllCommitsForPullRequest()
             {
-                var commit = new PullRequestCommit(null, null, null, null, null, null, null, null);
+                var commit = new PullRequestCommit(null, null, null, null, null, Enumerable.Empty<GitReference>(), null, null);
                 var expectedUrl = string.Format("repos/fake/repo/pulls/42/commits");
                 var gitHubClient = Substitute.For<IGitHubClient>();
                 var connection = Substitute.For<IConnection>();
@@ -303,13 +307,51 @@ namespace Octokit.Tests.Reactive
                 var connection = Substitute.For<IApiConnection>();
                 var client = new PullRequestsClient(connection);
 
-                await AssertEx.Throws<ArgumentNullException>(async () => await client.Commits(null, "name", 1));
-                await AssertEx.Throws<ArgumentNullException>(async () => await client.Commits("owner", null, 1));
-                await AssertEx.Throws<ArgumentException>(async () => await client.Commits(null, "", 1));
-                await AssertEx.Throws<ArgumentException>(async () => await client.Commits("", null, 1));
+                await Assert.ThrowsAsync<ArgumentNullException>(() => client.Commits(null, "name", 1));
+                await Assert.ThrowsAsync<ArgumentNullException>(() => client.Commits("owner", null, 1));
+                await Assert.ThrowsAsync<ArgumentNullException>(() => client.Commits(null, "", 1));
+                await Assert.ThrowsAsync<ArgumentException>(() => client.Commits("", null, 1));
             }
         }
 
+        public class TheFilesMethod
+        {
+            [Fact]
+            public async Task FetchesAllFilesForPullRequest()
+            {
+                var file = new PullRequestFile(null, null, null, 0, 0, 0, null, null, null, null);
+                var expectedUrl = string.Format("repos/fake/repo/pulls/42/files");
+                var gitHubClient = Substitute.For<IGitHubClient>();
+                var connection = Substitute.For<IConnection>();
+                IApiResponse<List<PullRequestFile>> response = new ApiResponse<List<PullRequestFile>>
+                (
+                    new Response(),
+                    new List<PullRequestFile> { file }
+                );
+                connection.Get<List<PullRequestFile>>(Args.Uri, null, null)
+                    .Returns(Task.FromResult(response));
+                gitHubClient.Connection.Returns(connection);
+                var client = new ObservablePullRequestsClient(gitHubClient);
+
+                var files = await client.Files("fake", "repo", 42).ToList();
+
+                Assert.Equal(1, files.Count);
+                Assert.Same(file, files[0]);
+                connection.Received().Get<List<PullRequestFile>>(new Uri(expectedUrl, UriKind.Relative), null, null);
+            }
+
+            [Fact]
+            public async Task EnsuresArgumentsNotNull()
+            {
+                var connection = Substitute.For<IApiConnection>();
+                var client = new PullRequestsClient(connection);
+
+                await Assert.ThrowsAsync<ArgumentNullException>(() => client.Files(null, "name", 1));
+                await Assert.ThrowsAsync<ArgumentNullException>(() => client.Files("owner", null, 1));
+                await Assert.ThrowsAsync<ArgumentException>(() => client.Files("", "name", 1));
+                await Assert.ThrowsAsync<ArgumentException>(() => client.Files("owner", "", 1));
+            }
+        }
         public class TheCtor
         {
             [Fact]

@@ -16,11 +16,15 @@ namespace Octokit.Tests.Http
     {
         public class TheBuildRequestMessageMethod
         {
+            readonly Uri _endpoint = new Uri("/ha-ha-business", UriKind.Relative);
+
             [Fact]
             public void AddsHeadersToRequestMessage()
             {
                 var request = new Request
                 {
+                    BaseAddress = GitHubClient.GitHubApiUrl,
+                    Endpoint = _endpoint,
                     Method = HttpMethod.Post,
                     Headers =
                     {
@@ -29,7 +33,7 @@ namespace Octokit.Tests.Http
                     }
                 };
                 var tester = new HttpClientAdapterTester();
-                
+
                 var requestMessage = tester.BuildRequestMessageTester(request);
 
                 Assert.Equal(2, requestMessage.Headers.Count());
@@ -47,6 +51,8 @@ namespace Octokit.Tests.Http
             {
                 var request = new Request
                 {
+                    BaseAddress = GitHubClient.GitHubApiUrl,
+                    Endpoint = _endpoint,
                     Method = HttpMethod.Post,
                     Body = "{}",
                     ContentType = "text/plain"
@@ -64,6 +70,8 @@ namespace Octokit.Tests.Http
             {
                 var request = new Request
                 {
+                    BaseAddress = GitHubClient.GitHubApiUrl,
+                    Endpoint = _endpoint,
                     Method = HttpMethod.Post,
                     Body = new MemoryStream(),
                     ContentType = "text/plain"
@@ -82,8 +90,10 @@ namespace Octokit.Tests.Http
             {
                 var request = new Request
                 {
+                    BaseAddress = GitHubClient.GitHubApiUrl,
+                    Endpoint = _endpoint,
                     Method = HttpMethod.Post,
-                    Body = new FormUrlEncodedContent(new Dictionary<string, string> {{"foo", "bar"}})
+                    Body = new FormUrlEncodedContent(new Dictionary<string, string> { { "foo", "bar" } })
                 };
                 var tester = new HttpClientAdapterTester();
 
@@ -109,7 +119,8 @@ namespace Octokit.Tests.Http
             [InlineData(HttpStatusCode.NotFound)]
             public async Task BuildsResponseFromResponseMessage(HttpStatusCode httpStatusCode)
             {
-                var responseMessage = new HttpResponseMessage {
+                var responseMessage = new HttpResponseMessage
+                {
                     StatusCode = httpStatusCode,
                     Content = new ByteArrayContent(Encoding.UTF8.GetBytes("{}")),
                     Headers =
@@ -121,7 +132,7 @@ namespace Octokit.Tests.Http
                 var tester = new HttpClientAdapterTester();
 
                 var response = await tester.BuildResponseTester(responseMessage);
-                
+
                 var firstHeader = response.Headers.First();
                 Assert.Equal("peanut", firstHeader.Key);
                 Assert.Equal("butter", firstHeader.Value);
@@ -139,7 +150,7 @@ namespace Octokit.Tests.Http
                 var responseMessage = new HttpResponseMessage
                 {
                     StatusCode = HttpStatusCode.OK,
-                    Content = new ByteArrayContent(new byte[] { 0, 1, 1, 0, 1}),
+                    Content = new ByteArrayContent(new byte[] { 0, 1, 1, 0, 1 }),
                 };
                 responseMessage.Content.Headers.ContentType = new MediaTypeHeaderValue("image/png");
                 var tester = new HttpClientAdapterTester();
@@ -168,6 +179,11 @@ namespace Octokit.Tests.Http
 
         sealed class HttpClientAdapterTester : HttpClientAdapter
         {
+            public HttpClientAdapterTester()
+                : base(HttpMessageHandlerFactory.CreateDefault)
+            {
+            }
+
             public HttpRequestMessage BuildRequestMessageTester(IRequest request)
             {
                 return BuildRequestMessage(request);

@@ -9,7 +9,7 @@ namespace Octokit
     {
         protected Account() { }
 
-        protected Account(string avatarUrl, string bio, string blog, int collaborators, string company, DateTimeOffset createdAt, int diskUsage, string email, int followers, int following, bool? hireable, string htmlUrl, int totalPrivateRepos, int id, string location, string login, string name, int ownedPrivateRepos, Plan plan, int privateGists, int publicGists, int publicRepos, string url)
+        protected Account(string avatarUrl, string bio, string blog, int collaborators, string company, DateTimeOffset createdAt, int diskUsage, string email, int followers, int following, bool? hireable, string htmlUrl, int totalPrivateRepos, int id, string location, string login, string name, int ownedPrivateRepos, Plan plan, int privateGists, int publicGists, int publicRepos, AccountType type, string url)
         {
             AvatarUrl = avatarUrl;
             Bio = bio;
@@ -33,13 +33,14 @@ namespace Octokit
             PrivateGists = privateGists;
             PublicGists = publicGists;
             PublicRepos = publicRepos;
+            Type = type;
             Url = url;
         }
 
         /// <summary>
         /// URL of the account's avatar.
         /// </summary>
-        public string AvatarUrl { get; protected set; } 
+        public string AvatarUrl { get; protected set; }
 
         /// <summary>
         /// The account's bio.
@@ -116,6 +117,13 @@ namespace Octokit
         /// The account's full name.
         /// </summary>
         public string Name { get; protected set; }
+
+        /// <summary>
+        /// The type of account associated with this entity
+        /// </summary>
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Naming", "CA1721:PropertyNamesShouldNotMatchGetMethods")]
+        public AccountType? Type { get; protected set; }
+
 
         /// <summary>
         /// Number of private repos owned by the account.

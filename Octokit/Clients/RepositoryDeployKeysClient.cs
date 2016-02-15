@@ -1,8 +1,8 @@
 ﻿using System;
+using System.Threading.Tasks;
 #if NET_45
 using System.Collections.Generic;
 #endif
-using System.Threading.Tasks;
 
 namespace Octokit
 {
@@ -20,7 +20,7 @@ namespace Octokit
         /// <param name="apiConnection">The API connection.</param>
         public RepositoryDeployKeysClient(IApiConnection apiConnection)
             : base(apiConnection)
-        { 
+        {
         }
 
         /// <summary>

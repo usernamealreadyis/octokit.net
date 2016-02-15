@@ -2,7 +2,6 @@
 using System.Collections.Generic;
 using System.Globalization;
 
-
 namespace Octokit.Internal
 {
     public abstract class SearchResult<T>
@@ -35,7 +34,7 @@ namespace Octokit.Internal
         {
             get
             {
-                return String.Format(CultureInfo.InvariantCulture, "TotalCount: {0}", TotalCount);
+                return string.Format(CultureInfo.InvariantCulture, "TotalCount: {0}", TotalCount);
             }
         }
     }

@@ -1,10 +1,10 @@
 ﻿using System;
+using System.Collections.ObjectModel;
+using System.Linq;
+using System.Threading.Tasks;
 #if NET_45
 using System.Collections.Generic;
 #endif
-using System.Threading.Tasks;
-using System.Linq;
-using System.Collections.ObjectModel;
 
 namespace Octokit
 {
@@ -22,15 +22,29 @@ namespace Octokit
         /// <param name="apiConnection">An API connection</param>
         public RepositoriesClient(IApiConnection apiConnection) : base(apiConnection)
         {
-            CommitStatus = new CommitStatusClient(apiConnection);
+            Status = new CommitStatusClient(apiConnection);
+            Hooks = new RepositoryHooksClient(apiConnection);
+            Forks = new RepositoryForksClient(apiConnection);
+#pragma warning disable CS0618 // Type or member is obsolete
             RepoCollaborators = new RepoCollaboratorsClient(apiConnection);
+#pragma warning restore CS0618 // Type or member is obsolete
+            Collaborator = new RepoCollaboratorsClient(apiConnection);
             Statistics = new StatisticsClient(apiConnection);
             Deployment = new DeploymentsClient(apiConnection);
             PullRequest = new PullRequestsClient(apiConnection);
+#pragma warning disable CS0618 // Type or member is obsolete
             RepositoryComments = new RepositoryCommentsClient(apiConnection);
+#pragma warning restore CS0618 // Type or member is obsolete
+            Comment = new RepositoryCommentsClient(apiConnection);
+#pragma warning disable CS0618 // Type or member is obsolete
             Commits = new RepositoryCommitsClient(apiConnection);
+#pragma warning restore CS0618 // Type or member is obsolete
+            Commit = new RepositoryCommitsClient(apiConnection);
+            Release = new ReleasesClient(apiConnection);
             DeployKeys = new RepositoryDeployKeysClient(apiConnection);
+            Merging = new MergingClient(apiConnection);
             Content = new RepositoryContentsClient(apiConnection);
+            Page = new RepositoryPagesClient(apiConnection);
         }
 
         /// <summary>
@@ -45,8 +59,6 @@ namespace Octokit
         public Task<Repository> Create(NewRepository newRepository)
         {
             Ensure.ArgumentNotNull(newRepository, "newRepository");
-            if (string.IsNullOrEmpty(newRepository.Name))
-                throw new ArgumentException("The new repository's name must not be null.");
 
             return Create(ApiUrls.Repositories(), null, newRepository);
         }
@@ -80,8 +92,8 @@ namespace Octokit
             catch (ApiValidationException e)
             {
                 string errorMessage = e.ApiError.FirstErrorMessageSafe();
-                
-                if (String.Equals(
+
+                if (string.Equals(
                     "name already exists on this account",
                     errorMessage,
                     StringComparison.OrdinalIgnoreCase))
@@ -100,7 +112,7 @@ namespace Octokit
                         baseAddress, e);
                 }
 
-                if (String.Equals(
+                if (string.Equals(
                     "please upgrade your plan to create a new private repository.",
                     errorMessage,
                     StringComparison.OrdinalIgnoreCase))
@@ -108,13 +120,19 @@ namespace Octokit
                     throw new PrivateRepositoryQuotaExceededException(e);
                 }
 
-                if (String.Equals(
+                if (string.Equals(
                     "name can't be private. You are over your quota.",
                     errorMessage,
                     StringComparison.OrdinalIgnoreCase))
                 {
                     throw new PrivateRepositoryQuotaExceededException(e);
                 }
+
+                if (errorMessage != null && errorMessage.EndsWith("is an unknown gitignore template.", StringComparison.OrdinalIgnoreCase))
+                {
+                    throw new InvalidGitIgnoreTemplateException(e);
+                }
+
                 throw;
             }
         }
@@ -155,6 +173,24 @@ namespace Octokit
         }
 
         /// <summary>
+        /// Edit the specified branch with the values given in <paramref name="update"/>
+        /// </summary>
+        /// <param name="owner">The owner of the repository</param>
+        /// <param name="name">The name of the repository</param>
+        /// <param name="branch">The name of the branch</param>
+        /// <param name="update">New values to update the branch with</param>
+        /// <returns>The updated <see cref="T:Octokit.Branch"/></returns>
+        public Task<Branch> EditBranch(string owner, string name, string branch, BranchUpdate update)
+        {
+            Ensure.ArgumentNotNullOrEmptyString(owner, "owner");
+            Ensure.ArgumentNotNullOrEmptyString(name, "repositoryName");
+            Ensure.ArgumentNotNullOrEmptyString(branch, "branchName");
+            Ensure.ArgumentNotNull(update, "update");
+
+            return ApiConnection.Patch<Branch>(ApiUrls.RepoBranch(owner, name, branch), update, AcceptHeaders.ProtectedBranchesApiPreview);
+        }
+
+        /// <summary>
         /// Gets the specified repository.
         /// </summary>
         /// <remarks>
@@ -174,6 +210,41 @@ namespace Octokit
         }
 
         /// <summary>
+        /// Gets all public repositories.
+        /// </summary>
+        /// <remarks>
+        /// See the <a href="https://developer.github.com/v3/repos/#list-all-public-repositories">API documentation</a> for more information.
+        /// The default page size on GitHub.com is 30.
+        /// </remarks>
+        /// <exception cref="AuthorizationException">Thrown if the client is not authenticated.</exception>
+        /// <exception cref="ApiException">Thrown when a general API error occurs.</exception>
+        /// <returns>A <see cref="IReadOnlyPagedCollection{Repository}"/> of <see cref="Repository"/>.</returns>
+        public Task<IReadOnlyList<Repository>> GetAllPublic()
+        {
+            return ApiConnection.GetAll<Repository>(ApiUrls.AllPublicRepositories());
+        }
+
+        /// <summary>
+        /// Gets all public repositories since the integer ID of the last Repository that you've seen.
+        /// </summary>
+        /// <remarks>
+        /// See the <a href="https://developer.github.com/v3/repos/#list-all-public-repositories">API documentation</a> for more information.
+        /// The default page size on GitHub.com is 30.
+        /// </remarks>
+        /// <param name="request">Search parameters of the last repository seen</param>
+        /// <exception cref="AuthorizationException">Thrown if the client is not authenticated.</exception>
+        /// <exception cref="ApiException">Thrown when a general API error occurs.</exception>
+        /// <returns>A <see cref="IReadOnlyPagedCollection{Repository}"/> of <see cref="Repository"/>.</returns>
+        public Task<IReadOnlyList<Repository>> GetAllPublic(PublicRepositoryRequest request)
+        {
+            Ensure.ArgumentNotNull(request, "request");
+
+            var url = ApiUrls.AllPublicRepositories(request.Since);
+
+            return ApiConnection.GetAll<Repository>(url);
+        }
+
+        /// <summary>
         /// Gets all repositories owned by the current user.
         /// </summary>
         /// <remarks>
@@ -186,6 +257,24 @@ namespace Octokit
         public Task<IReadOnlyList<Repository>> GetAllForCurrent()
         {
             return ApiConnection.GetAll<Repository>(ApiUrls.Repositories());
+        }
+
+        /// <summary>
+        /// Gets all repositories owned by the current user.
+        /// </summary>
+        /// <remarks>
+        /// See the <a href="http://developer.github.com/v3/repos/#list-your-repositories">API documentation</a> for more information.
+        /// The default page size on GitHub.com is 30.
+        /// </remarks>
+        /// <param name="request">Search parameters to filter results on</param>
+        /// <exception cref="AuthorizationException">Thrown if the client is not authenticated.</exception>
+        /// <exception cref="ApiException">Thrown when a general API error occurs.</exception>
+        /// <returns>A <see cref="IReadOnlyPagedCollection{Repository}"/> of <see cref="Repository"/>.</returns>
+        public Task<IReadOnlyList<Repository>> GetAllForCurrent(RepositoryRequest request)
+        {
+            Ensure.ArgumentNotNull(request, "request");
+
+            return ApiConnection.GetAll<Repository>(ApiUrls.Repositories(), request.ToParametersDictionary());
         }
 
         /// <summary>
@@ -221,36 +310,15 @@ namespace Octokit
         }
 
         /// <summary>
-        /// Gets the preferred README for the specified repository.
+        /// A client for GitHub's Commit Status API.
         /// </summary>
         /// <remarks>
-        /// See the <a href="http://developer.github.com/v3/repos/contents/#get-the-readme">API documentation</a> for more information.
+        /// See the <a href="http://developer.github.com/v3/repos/statuses/">Commit Status API documentation</a> for more
+        /// details. Also check out the <a href="https://github.com/blog/1227-commit-status-api">blog post</a> 
+        /// that announced this feature.
         /// </remarks>
-        /// <param name="owner">The owner of the repository</param>
-        /// <param name="name">The name of the repository</param>
-        /// <exception cref="ApiException">Thrown when a general API error occurs.</exception>
-        /// <returns></returns>
-        [Obsolete("This method has been obsoleted by Content.GetReadme. Please use that instead.")]
-        public Task<Readme> GetReadme(string owner, string name)
-        {
-            return Content.GetReadme(owner, name);
-        }
-
-        /// <summary>
-        /// Gets the perferred README's HTML for the specified repository.
-        /// </summary>
-        /// <remarks>
-        /// See the <a href="http://developer.github.com/v3/repos/contents/#get-the-readme">API documentation</a> for more information.
-        /// </remarks>
-        /// <param name="owner">The owner of the repository</param>
-        /// <param name="name">The name of the repository</param>
-        /// <exception cref="ApiException">Thrown when a general API error occurs.</exception>
-        /// <returns></returns>
-        [Obsolete("This method has been obsoleted by Content.GetReadmeHtml. Please use that instead.")]
-        public Task<string> GetReadmeHtml(string owner, string name)
-        {
-            return Content.GetReadmeHtml(owner, name);
-        }
+        [Obsolete("Use Status instead")]
+        public ICommitStatusClient CommitStatus { get { return Status; } }
 
         /// <summary>
         /// A client for GitHub's Commit Status API.
@@ -260,7 +328,19 @@ namespace Octokit
         /// details. Also check out the <a href="https://github.com/blog/1227-commit-status-api">blog post</a> 
         /// that announced this feature.
         /// </remarks>
-        public ICommitStatusClient CommitStatus { get; private set; }
+        public ICommitStatusClient Status { get; private set; }
+
+        /// <summary>
+        /// A client for GitHub's Repository Hooks API.
+        /// </summary>
+        /// <remarks>See <a href="http://developer.github.com/v3/repos/hooks/">Hooks API documentation</a> for more information.</remarks>
+        public IRepositoryHooksClient Hooks { get; private set; }
+
+        /// <summary>
+        /// A client for GitHub's Repository Forks API.
+        /// </summary>
+        /// <remarks>See <a href="http://developer.github.com/v3/repos/forks/">Forks API documentation</a> for more information.</remarks>        
+        public IRepositoryForksClient Forks { get; private set; }
 
         /// <summary>
         /// A client for GitHub's Repo Collaborators.
@@ -268,7 +348,16 @@ namespace Octokit
         /// <remarks>
         /// See the <a href="http://developer.github.com/v3/repos/collaborators/">Collaborators API documentation</a> for more details
         /// </remarks>
+        [System.Obsolete("Collaborator information is now available under the Collaborator property. This will be removed in a future update.")]
         public IRepoCollaboratorsClient RepoCollaborators { get; private set; }
+
+        /// <summary>
+        /// A client for GitHub's Repo Collaborators.
+        /// </summary>
+        /// <remarks>
+        /// See the <a href="http://developer.github.com/v3/repos/collaborators/">Collaborators API documentation</a> for more details
+        /// </remarks>
+        public IRepoCollaboratorsClient Collaborator { get; private set; }
 
         /// <summary>
         /// Client for GitHub's Repository Deployments API
@@ -292,7 +381,32 @@ namespace Octokit
         /// <remarks>
         /// See the <a href="http://developer.github.com/v3/repos/commits/">Commits API documentation</a> for more details
         ///</remarks>
+        [Obsolete("Commit information is now available under the Commit property. This will be removed in a future update.")]
         public IRepositoryCommitsClient Commits { get; private set; }
+
+        /// <summary>
+        /// Client for GitHub's Repository Commits API
+        /// </summary>
+        /// <remarks>
+        /// See the <a href="http://developer.github.com/v3/repos/commits/">Commits API documentation</a> for more details
+        ///</remarks>
+        public IRepositoryCommitsClient Commit { get; private set; }
+
+        /// <summary>
+        /// Access GitHub's Releases API.
+        /// </summary>
+        /// <remarks>
+        /// Refer to the API docmentation for more information: https://developer.github.com/v3/repos/releases/
+        /// </remarks>
+        public IReleasesClient Release { get; private set; }
+
+        /// <summary>
+        /// Client for GitHub's Repository Merging API
+        /// </summary>
+        /// <remarks>
+        /// See the <a href="https://developer.github.com/v3/repos/merging/">Merging API documentation</a> for more details
+        ///</remarks>
+        public IMergingClient Merging { get; private set; }
 
         /// <summary>
         /// Client for managing pull requests.
@@ -308,7 +422,16 @@ namespace Octokit
         /// <remarks>
         /// See the <a href="http://developer.github.com/v3/repos/comments/">Repository Comments API documentation</a> for more information.
         /// </remarks>
+        [Obsolete("Comment information is now available under the Comment property. This will be removed in a future update.")]
         public IRepositoryCommentsClient RepositoryComments { get; private set; }
+
+        /// <summary>
+        /// Client for managing commit comments in a repository.
+        /// </summary>
+        /// <remarks>
+        /// See the <a href="http://developer.github.com/v3/repos/comments/">Repository Comments API documentation</a> for more information.
+        /// </remarks>
+        public IRepositoryCommentsClient Comment { get; private set; }
 
         /// <summary>
         /// Client for managing deploy keys in a repository.
@@ -341,8 +464,7 @@ namespace Octokit
             Ensure.ArgumentNotNullOrEmptyString(owner, "owner");
             Ensure.ArgumentNotNullOrEmptyString(name, "name");
 
-            var endpoint = ApiUrls.RepoBranches(owner, name);
-            return ApiConnection.GetAll<Branch>(endpoint);
+            return ApiConnection.GetAll<Branch>(ApiUrls.RepoBranches(owner, name), null, AcceptHeaders.ProtectedBranchesApiPreview);
         }
 
 
@@ -454,7 +576,15 @@ namespace Octokit
             Ensure.ArgumentNotNullOrEmptyString(repositoryName, "repositoryName");
             Ensure.ArgumentNotNullOrEmptyString(branchName, "branchName");
 
-            return ApiConnection.Get<Branch>(ApiUrls.RepoBranch(owner, repositoryName, branchName));
+            return ApiConnection.Get<Branch>(ApiUrls.RepoBranch(owner, repositoryName, branchName), null, AcceptHeaders.ProtectedBranchesApiPreview);
         }
+
+        /// <summary>
+        /// A client for GitHub's Repository Pages API.
+        /// </summary>
+        /// <remarks>
+        /// See the <a href="https://developer.github.com/v3/repos/pages/">Repository Pages API documentation</a> for more information.
+        /// </remarks>
+        public IRepositoryPagesClient Page { get; private set; }
     }
 }

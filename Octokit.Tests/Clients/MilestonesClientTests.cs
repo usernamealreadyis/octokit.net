@@ -19,8 +19,7 @@ namespace Octokit.Tests.Clients
 
                 client.Get("fake", "repo", 42);
 
-                connection.Received().Get<Milestone>(Arg.Is<Uri>(u => u.ToString() == "repos/fake/repo/milestones/42"),
-                    null);
+                connection.Received().Get<Milestone>(Arg.Is<Uri>(u => u.ToString() == "repos/fake/repo/milestones/42"));
             }
 
             [Fact]
@@ -28,10 +27,10 @@ namespace Octokit.Tests.Clients
             {
                 var client = new MilestonesClient(Substitute.For<IApiConnection>());
 
-                await AssertEx.Throws<ArgumentNullException>(async () => await client.Get(null, "name", 1));
-                await AssertEx.Throws<ArgumentNullException>(async () => await client.Get("owner", null, 1));
-                await AssertEx.Throws<ArgumentException>(async () => await client.Get(null, "", 1));
-                await AssertEx.Throws<ArgumentException>(async () => await client.Get("", null, 1));
+                await Assert.ThrowsAsync<ArgumentNullException>(() => client.Get(null, "name", 1));
+                await Assert.ThrowsAsync<ArgumentNullException>(() => client.Get("owner", null, 1));
+                await Assert.ThrowsAsync<ArgumentNullException>(() => client.Get(null, "", 1));
+                await Assert.ThrowsAsync<ArgumentException>(() => client.Get("", null, 1));
             }
         }
 
@@ -43,7 +42,7 @@ namespace Octokit.Tests.Clients
                 var connection = Substitute.For<IApiConnection>();
                 var client = new MilestonesClient(connection);
 
-                await client.GetForRepository("fake", "repo");
+                await client.GetAllForRepository("fake", "repo");
 
                 connection.Received().GetAll<Milestone>(Arg.Is<Uri>(u => u.ToString() == "repos/fake/repo/milestones"),
                     Arg.Any<Dictionary<string, string>>());
@@ -55,7 +54,7 @@ namespace Octokit.Tests.Clients
                 var connection = Substitute.For<IApiConnection>();
                 var client = new MilestonesClient(connection);
 
-                client.GetForRepository("fake", "repo", new MilestoneRequest { SortDirection = SortDirection.Descending });
+                client.GetAllForRepository("fake", "repo", new MilestoneRequest { SortDirection = SortDirection.Descending });
 
                 connection.Received().GetAll<Milestone>(Arg.Is<Uri>(u => u.ToString() == "repos/fake/repo/milestones"),
                     Arg.Is<Dictionary<string, string>>(d => d.Count == 3

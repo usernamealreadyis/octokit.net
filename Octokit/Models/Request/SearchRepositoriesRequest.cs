@@ -1,10 +1,10 @@
-using System.Diagnostics;
-using Octokit.Internal;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Linq;
+using Octokit.Internal;
 
 namespace Octokit
 {
@@ -15,6 +15,17 @@ namespace Octokit
     [DebuggerDisplay("{DebuggerDisplay,nq}")]
     public class SearchRepositoriesRequest : BaseSearchRequest
     {
+        /// <summary>
+        /// Initializes a new instance of the <see cref="SearchRepositoriesRequest"/> class.
+        /// </summary>
+        public SearchRepositoriesRequest()
+        {
+            Order = SortDirection.Descending;
+        }
+        /// <summary>
+        /// Initializes a new instance of the <see cref="SearchRepositoriesRequest"/> class.
+        /// </summary>
+        /// <param name="term">The search term.</param>
         public SearchRepositoriesRequest(string term)
             : base(term)
         {
@@ -107,47 +118,47 @@ namespace Octokit
 
             if (In != null)
             {
-                parameters.Add(String.Format(CultureInfo.InvariantCulture, "in:{0}", String.Join(",", In)));
+                parameters.Add(string.Format(CultureInfo.InvariantCulture, "in:{0}", string.Join(",", In)));
             }
 
             if (Size != null)
             {
-                parameters.Add(String.Format(CultureInfo.InvariantCulture, "size:{0}", Size));
+                parameters.Add(string.Format(CultureInfo.InvariantCulture, "size:{0}", Size));
             }
 
             if (Forks != null)
             {
-                parameters.Add(String.Format(CultureInfo.InvariantCulture, "forks:{0}", Forks));
+                parameters.Add(string.Format(CultureInfo.InvariantCulture, "forks:{0}", Forks));
             }
 
             if (Fork != null)
             {
-                parameters.Add(String.Format(CultureInfo.InvariantCulture, "fork:{0}", Fork));
+                parameters.Add(string.Format(CultureInfo.InvariantCulture, "fork:{0}", Fork));
             }
 
             if (Stars != null)
             {
-                parameters.Add(String.Format(CultureInfo.InvariantCulture, "stars:{0}", Stars));
+                parameters.Add(string.Format(CultureInfo.InvariantCulture, "stars:{0}", Stars));
             }
 
             if (Language != null)
             {
-                parameters.Add(String.Format(CultureInfo.InvariantCulture, "language:{0}", Language));
+                parameters.Add(string.Format(CultureInfo.InvariantCulture, "language:{0}", Language));
             }
 
             if (User.IsNotBlank())
             {
-                parameters.Add(String.Format(CultureInfo.InvariantCulture, "user:{0}", User));
+                parameters.Add(string.Format(CultureInfo.InvariantCulture, "user:{0}", User));
             }
 
             if (Created != null)
             {
-                parameters.Add(String.Format(CultureInfo.InvariantCulture, "created:{0}", Created));
+                parameters.Add(string.Format(CultureInfo.InvariantCulture, "created:{0}", Created));
             }
 
             if (Updated != null)
             {
-                parameters.Add(String.Format(CultureInfo.InvariantCulture, "pushed:{0}", Updated));
+                parameters.Add(string.Format(CultureInfo.InvariantCulture, "pushed:{0}", Updated));
             }
             return parameters;
         }
@@ -156,7 +167,7 @@ namespace Octokit
         {
             get
             {
-                return String.Format(CultureInfo.InvariantCulture, "Term: {0} Sort: {1}", Term, Sort);
+                return string.Format(CultureInfo.InvariantCulture, "Term: {0} Sort: {1}", Term, Sort);
             }
         }
     }
@@ -179,7 +190,7 @@ namespace Octokit
     [DebuggerDisplay("{DebuggerDisplay,nq}")]
     public class Range
     {
-        private string query = string.Empty;
+        private readonly string query = string.Empty;
 
         /// <summary>
         /// Matches repositories that are <param name="size">size</param> MB exactly
@@ -223,7 +234,7 @@ namespace Octokit
 
         internal string DebuggerDisplay
         {
-            get { return String.Format(CultureInfo.InvariantCulture, "Query: {0}", query); }
+            get { return string.Format(CultureInfo.InvariantCulture, "Query: {0}", query); }
         }
 
         /// <summary>
@@ -296,9 +307,17 @@ namespace Octokit
             }
         }
 
+        /// <summary>
+        /// Matches repositories with regards to both the <param name="from"/> and <param name="to"/> dates.
+        /// </summary>
+        public DateRange(DateTime from, DateTime to)
+        {
+            query = string.Format(CultureInfo.InvariantCulture, "{0:yyyy-MM-dd}..{1:yyyy-MM-dd}", from, to);
+        }
+
         internal string DebuggerDisplay
         {
-            get { return String.Format(CultureInfo.InvariantCulture, "Query: {0}", query); }
+            get { return string.Format(CultureInfo.InvariantCulture, "Query: {0}", query); }
         }
 
         /// <summary>
@@ -343,6 +362,18 @@ namespace Octokit
         public static DateRange GreaterThanOrEquals(DateTime date)
         {
             return new DateRange(date, SearchQualifierOperator.GreaterThanOrEqualTo);
+        }
+
+        /// <summary>
+        /// helper method to create a bounded Date Comparison
+        /// e.g. 2015-08-01..2015-10-31
+        /// </summary>
+        /// <param name="from">earlier date of the two</param>
+        /// <param name="to">latter date of the two</param>
+        /// <returns><see cref="DateRange"/></returns>
+        public static DateRange Between(DateTime from, DateTime to)
+        {
+            return new DateRange(from, to);
         }
 
         public override string ToString()

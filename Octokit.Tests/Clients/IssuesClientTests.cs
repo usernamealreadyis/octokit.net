@@ -21,8 +21,7 @@ namespace Octokit.Tests.Clients
 
                 client.Get("fake", "repo", 42);
 
-                connection.Received().Get<Issue>(Arg.Is<Uri>(u => u.ToString() == "repos/fake/repo/issues/42"),
-                    null);
+                connection.Received().Get<Issue>(Arg.Is<Uri>(u => u.ToString() == "repos/fake/repo/issues/42"));
             }
 
             [Fact]
@@ -30,10 +29,9 @@ namespace Octokit.Tests.Clients
             {
                 var client = new IssuesClient(Substitute.For<IApiConnection>());
 
-                await AssertEx.Throws<ArgumentNullException>(async () => await client.Get(null, "name", 1));
-                await AssertEx.Throws<ArgumentNullException>(async () => await client.Get("owner", null, 1));
+                await Assert.ThrowsAsync<ArgumentNullException>(() => client.Get(null, "name", 1));
+                await Assert.ThrowsAsync<ArgumentNullException>(() => client.Get("owner", null, 1));
             }
-
         }
 
         public class TheGetAllForCurrentMethod
@@ -90,7 +88,7 @@ namespace Octokit.Tests.Clients
                 var connection = Substitute.For<IApiConnection>();
                 var client = new IssuesClient(connection);
 
-                client.GetForRepository("fake", "repo");
+                client.GetAllForRepository("fake", "repo");
 
                 connection.Received().GetAll<Issue>(Arg.Is<Uri>(u => u.ToString() == "repos/fake/repo/issues"),
                     Arg.Any<Dictionary<string, string>>());
@@ -102,7 +100,7 @@ namespace Octokit.Tests.Clients
                 var connection = Substitute.For<IApiConnection>();
                 var client = new IssuesClient(connection);
 
-                client.GetForRepository("fake", "repo", new RepositoryIssueRequest
+                client.GetAllForRepository("fake", "repo", new RepositoryIssueRequest
                 {
                     SortDirection = SortDirection.Ascending
                 });
@@ -121,11 +119,11 @@ namespace Octokit.Tests.Clients
                 var connection = Substitute.For<IApiConnection>();
                 var client = new IssuesClient(connection);
 
-                await Assert.ThrowsAsync<ArgumentNullException>(() => client.GetForRepository(null, "name", new RepositoryIssueRequest()));
-                await Assert.ThrowsAsync<ArgumentException>(() => client.GetForRepository("", "name", new RepositoryIssueRequest()));
-                await Assert.ThrowsAsync<ArgumentNullException>(() => client.GetForRepository("owner", null, new RepositoryIssueRequest()));
-                await Assert.ThrowsAsync<ArgumentException>(() => client.GetForRepository("owner", "", new RepositoryIssueRequest()));
-                await Assert.ThrowsAsync<ArgumentNullException>(() => client.GetForRepository("owner", "name", null));
+                await Assert.ThrowsAsync<ArgumentNullException>(() => client.GetAllForRepository(null, "name", new RepositoryIssueRequest()));
+                await Assert.ThrowsAsync<ArgumentException>(() => client.GetAllForRepository("", "name", new RepositoryIssueRequest()));
+                await Assert.ThrowsAsync<ArgumentNullException>(() => client.GetAllForRepository("owner", null, new RepositoryIssueRequest()));
+                await Assert.ThrowsAsync<ArgumentException>(() => client.GetAllForRepository("owner", "", new RepositoryIssueRequest()));
+                await Assert.ThrowsAsync<ArgumentNullException>(() => client.GetAllForRepository("owner", "name", null));
             }
         }
 
@@ -237,6 +235,8 @@ namespace Octokit.Tests.Clients
 
             Assert.Equal(new Uri("https://api.github.com/repos/octokit-net-test/public-repo-20131022050247078/issues/1"), response.Body.Url);
             Assert.Equal(new Uri("https://github.com/octokit-net-test/public-repo-20131022050247078/issues/1"), response.Body.HtmlUrl);
+            Assert.Equal(new Uri("https://api.github.com/repos/octokit-net-test/public-repo-20131022050247078/issues/1/comments"), response.Body.CommentsUrl);
+            Assert.Equal(new Uri("https://api.github.com/repos/octokit-net-test/public-repo-20131022050247078/issues/1/events"), response.Body.EventsUrl);
         }
     }
 }

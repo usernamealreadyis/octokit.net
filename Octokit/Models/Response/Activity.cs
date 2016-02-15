@@ -60,11 +60,16 @@ namespace Octokit
         /// </summary>
         public string Id { get; protected set; }
 
+        /// <summary>
+        /// The payload associated with the activity event.
+        /// </summary>
+        public ActivityPayload Payload { get; protected set; }
+
         internal string DebuggerDisplay
         {
             get
             {
-                return String.Format(CultureInfo.InvariantCulture, "Type: {0}", Type);
+                return string.Format(CultureInfo.InvariantCulture, "Type: {0}", Type);
             }
         }
     }

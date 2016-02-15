@@ -30,8 +30,7 @@ namespace Octokit.Tests.Clients
             {
                 var client = new RepositoriesClient(Substitute.For<IApiConnection>());
 
-                await AssertEx.Throws<ArgumentNullException>(async () => await client.Create(null));
-                await AssertEx.Throws<ArgumentException>(async () => await client.Create(new NewRepository { Name = null }));
+                await Assert.ThrowsAsync<ArgumentNullException>(() => client.Create(null));
             }
 
             [Fact]
@@ -40,7 +39,7 @@ namespace Octokit.Tests.Clients
                 var connection = Substitute.For<IApiConnection>();
                 var client = new RepositoriesClient(connection);
 
-                client.Create(new NewRepository { Name = "aName" });
+                client.Create(new NewRepository("aName"));
 
                 connection.Received().Post<Repository>(Arg.Is<Uri>(u => u.ToString() == "user/repos"), Arg.Any<NewRepository>());
             }
@@ -50,7 +49,7 @@ namespace Octokit.Tests.Clients
             {
                 var connection = Substitute.For<IApiConnection>();
                 var client = new RepositoriesClient(connection);
-                var newRepository = new NewRepository { Name = "aName" };
+                var newRepository = new NewRepository("aName");
 
                 client.Create(newRepository);
 
@@ -60,7 +59,7 @@ namespace Octokit.Tests.Clients
             [Fact]
             public async Task ThrowsRepositoryExistsExceptionWhenRepositoryExistsForCurrentUser()
             {
-                var newRepository = new NewRepository { Name = "aName" };
+                var newRepository = new NewRepository("aName");
                 var response = Substitute.For<IResponse>();
                 response.StatusCode.Returns((HttpStatusCode)422);
                 response.Body.Returns(@"{""message"":""Validation Failed"",""documentation_url"":"
@@ -74,8 +73,8 @@ namespace Octokit.Tests.Clients
                     .Returns<Task<Repository>>(_ => { throw new ApiValidationException(response); });
                 var client = new RepositoriesClient(connection);
 
-                var exception = await AssertEx.Throws<RepositoryExistsException>(
-                    async () => await client.Create(newRepository));
+                var exception = await Assert.ThrowsAsync<RepositoryExistsException>(
+                    () => client.Create(newRepository));
 
                 Assert.False(exception.OwnerIsOrganization);
                 Assert.Null(exception.Organization);
@@ -86,7 +85,7 @@ namespace Octokit.Tests.Clients
             [Fact]
             public async Task ThrowsExceptionWhenPrivateRepositoryQuotaExceeded()
             {
-                var newRepository = new NewRepository { Name = "aName", Private = true };
+                var newRepository = new NewRepository("aName") { Private = true };
                 var response = Substitute.For<IResponse>();
                 response.StatusCode.Returns((HttpStatusCode)422);
                 response.Body.Returns(@"{""message"":""Validation Failed"",""documentation_url"":"
@@ -101,8 +100,8 @@ namespace Octokit.Tests.Clients
                     .Returns<Task<Repository>>(_ => { throw new ApiValidationException(response); });
                 var client = new RepositoriesClient(connection);
 
-                var exception = await AssertEx.Throws<PrivateRepositoryQuotaExceededException>(
-                    async () => await client.Create(newRepository));
+                var exception = await Assert.ThrowsAsync<PrivateRepositoryQuotaExceededException>(
+                    () => client.Create(newRepository));
 
                 Assert.NotNull(exception);
             }
@@ -115,9 +114,8 @@ namespace Octokit.Tests.Clients
             {
                 var client = new RepositoriesClient(Substitute.For<IApiConnection>());
 
-                await AssertEx.Throws<ArgumentNullException>(async () => await client.Create(null, new NewRepository { Name = "aName" }));
-                await AssertEx.Throws<ArgumentException>(async () => await client.Create("aLogin", null));
-                await AssertEx.Throws<ArgumentException>(async () => await client.Create("aLogin", new NewRepository { Name = null }));
+                await Assert.ThrowsAsync<ArgumentNullException>(() => client.Create(null, new NewRepository("aName")));
+                await Assert.ThrowsAsync<ArgumentNullException>(() => client.Create("aLogin", null));
             }
 
             [Fact]
@@ -126,7 +124,7 @@ namespace Octokit.Tests.Clients
                 var connection = Substitute.For<IApiConnection>();
                 var client = new RepositoriesClient(connection);
 
-                await client.Create("theLogin", new NewRepository { Name = "aName" });
+                await client.Create("theLogin", new NewRepository("aName"));
 
                 connection.Received().Post<Repository>(
                     Arg.Is<Uri>(u => u.ToString() == "orgs/theLogin/repos"),
@@ -138,7 +136,7 @@ namespace Octokit.Tests.Clients
             {
                 var connection = Substitute.For<IApiConnection>();
                 var client = new RepositoriesClient(connection);
-                var newRepository = new NewRepository { Name = "aName" };
+                var newRepository = new NewRepository("aName");
 
                 await client.Create("aLogin", newRepository);
 
@@ -148,7 +146,7 @@ namespace Octokit.Tests.Clients
             [Fact]
             public async Task ThrowsRepositoryExistsExceptionWhenRepositoryExistsForSpecifiedOrg()
             {
-                var newRepository = new NewRepository { Name = "aName" };
+                var newRepository = new NewRepository("aName");
                 var response = Substitute.For<IResponse>();
                 response.StatusCode.Returns((HttpStatusCode)422);
                 response.Body.Returns(@"{""message"":""Validation Failed"",""documentation_url"":"
@@ -160,8 +158,8 @@ namespace Octokit.Tests.Clients
                     .Returns<Task<Repository>>(_ => { throw new ApiValidationException(response); });
                 var client = new RepositoriesClient(connection);
 
-                var exception = await AssertEx.Throws<RepositoryExistsException>(
-                    async () => await client.Create("illuminati", newRepository));
+                var exception = await Assert.ThrowsAsync<RepositoryExistsException>(
+                    () => client.Create("illuminati", newRepository));
 
                 Assert.True(exception.OwnerIsOrganization);
                 Assert.Equal("illuminati", exception.Organization);
@@ -174,7 +172,7 @@ namespace Octokit.Tests.Clients
             [Fact]
             public async Task ThrowsValidationException()
             {
-                var newRepository = new NewRepository { Name = "aName" };
+                var newRepository = new NewRepository("aName");
                 var response = Substitute.For<IResponse>();
                 response.StatusCode.Returns((HttpStatusCode)422);
                 response.Body.Returns(@"{""message"":""Validation Failed"",""documentation_url"":"
@@ -185,8 +183,8 @@ namespace Octokit.Tests.Clients
                     .Returns<Task<Repository>>(_ => { throw new ApiValidationException(response); });
                 var client = new RepositoriesClient(connection);
 
-                var exception = await AssertEx.Throws<ApiValidationException>(
-                    async () => await client.Create("illuminati", newRepository));
+                var exception = await Assert.ThrowsAsync<ApiValidationException>(
+                    () => client.Create("illuminati", newRepository));
 
                 Assert.Null(exception as RepositoryExistsException);
             }
@@ -194,7 +192,7 @@ namespace Octokit.Tests.Clients
             [Fact]
             public async Task ThrowsRepositoryExistsExceptionForEnterpriseInstance()
             {
-                var newRepository = new NewRepository { Name = "aName" };
+                var newRepository = new NewRepository("aName");
                 var response = Substitute.For<IResponse>();
                 response.StatusCode.Returns((HttpStatusCode)422);
                 response.Body.Returns(@"{""message"":""Validation Failed"",""documentation_url"":"
@@ -206,8 +204,8 @@ namespace Octokit.Tests.Clients
                     .Returns<Task<Repository>>(_ => { throw new ApiValidationException(response); });
                 var client = new RepositoriesClient(connection);
 
-                var exception = await AssertEx.Throws<RepositoryExistsException>(
-                    async () => await client.Create("illuminati", newRepository));
+                var exception = await Assert.ThrowsAsync<RepositoryExistsException>(
+                    () => client.Create("illuminati", newRepository));
 
                 Assert.Equal("aName", exception.RepositoryName);
                 Assert.Equal(new Uri("https://example.com/illuminati/aName"), exception.ExistingRepositoryWebUrl);
@@ -221,8 +219,8 @@ namespace Octokit.Tests.Clients
             {
                 var client = new RepositoriesClient(Substitute.For<IApiConnection>());
 
-                await AssertEx.Throws<ArgumentNullException>(async () => await client.Delete(null, "aRepoName"));
-                await AssertEx.Throws<ArgumentNullException>(async () => await client.Delete("anOwner", null));
+                await Assert.ThrowsAsync<ArgumentNullException>(() => client.Delete(null, "aRepoName"));
+                await Assert.ThrowsAsync<ArgumentNullException>(() => client.Delete("anOwner", null));
             }
 
             [Fact]
@@ -247,7 +245,7 @@ namespace Octokit.Tests.Clients
 
                 client.Get("fake", "repo");
 
-                connection.Received().Get<Repository>(Arg.Is<Uri>(u => u.ToString() == "repos/fake/repo"), null);
+                connection.Received().Get<Repository>(Arg.Is<Uri>(u => u.ToString() == "repos/fake/repo"));
             }
 
             [Fact]
@@ -255,15 +253,58 @@ namespace Octokit.Tests.Clients
             {
                 var client = new RepositoriesClient(Substitute.For<IApiConnection>());
 
-                await AssertEx.Throws<ArgumentNullException>(async () => await client.Get(null, "name"));
-                await AssertEx.Throws<ArgumentNullException>(async () => await client.Get("owner", null));
+                await Assert.ThrowsAsync<ArgumentNullException>(() => client.Get(null, "name"));
+                await Assert.ThrowsAsync<ArgumentNullException>(() => client.Get("owner", null));
+            }
+        }
+
+        public class TheGetAllPublicMethod
+        {
+            [Fact]
+            public void RequestsTheCorrectUrlAndReturnsRepositories()
+            {
+                var connection = Substitute.For<IApiConnection>();
+                var client = new RepositoriesClient(connection);
+
+                client.GetAllPublic();
+
+                connection.Received()
+                    .GetAll<Repository>(Arg.Is<Uri>(u => u.ToString() == "/repositories"));
+            }
+        }
+
+
+        public class TheGetAllPublicSinceMethod
+        {
+            [Fact]
+            public void RequestsTheCorrectUrl()
+            {
+                var connection = Substitute.For<IApiConnection>();
+                var client = new RepositoriesClient(connection);
+
+                client.GetAllPublic(new PublicRepositoryRequest(364));
+
+                connection.Received()
+                    .GetAll<Repository>(Arg.Is<Uri>(u => u.ToString() == "/repositories?since=364"));
+            }
+
+            [Fact]
+            public void SendsTheCorrectParameter()
+            {
+                var connection = Substitute.For<IApiConnection>();
+                var client = new RepositoriesClient(connection);
+
+                client.GetAllPublic(new PublicRepositoryRequest(364));
+
+                connection.Received()
+                    .GetAll<Repository>(Arg.Is<Uri>(u => u.ToString() == "/repositories?since=364"));
             }
         }
 
         public class TheGetAllForCurrentMethod
         {
             [Fact]
-            public void RequestsTheCorrectUrlAndReturnsOrganizations()
+            public void RequestsTheCorrectUrlAndReturnsRepositories()
             {
                 var connection = Substitute.For<IApiConnection>();
                 var client = new RepositoriesClient(connection);
@@ -273,12 +314,115 @@ namespace Octokit.Tests.Clients
                 connection.Received()
                     .GetAll<Repository>(Arg.Is<Uri>(u => u.ToString() == "user/repos"));
             }
+
+            [Fact]
+            public void CanFilterByType()
+            {
+                var connection = Substitute.For<IApiConnection>();
+                var client = new RepositoriesClient(connection);
+
+                var request = new RepositoryRequest
+                {
+                    Type = RepositoryType.All
+                };
+
+                client.GetAllForCurrent(request);
+
+                connection.Received()
+                    .GetAll<Repository>(
+                        Arg.Is<Uri>(u => u.ToString() == "user/repos"),
+                        Arg.Is<Dictionary<string, string>>(d => d["type"] == "all"));
+            }
+
+            [Fact]
+            public void CanFilterBySort()
+            {
+                var connection = Substitute.For<IApiConnection>();
+                var client = new RepositoriesClient(connection);
+
+                var request = new RepositoryRequest
+                {
+                    Type = RepositoryType.Private,
+                    Sort = RepositorySort.FullName
+                };
+
+                client.GetAllForCurrent(request);
+
+                connection.Received()
+                    .GetAll<Repository>(
+                        Arg.Is<Uri>(u => u.ToString() == "user/repos"),
+                        Arg.Is<Dictionary<string, string>>(d =>
+                            d["type"] == "private" && d["sort"] == "full_name"));
+            }
+
+            [Fact]
+            public void CanFilterBySortDirection()
+            {
+                var connection = Substitute.For<IApiConnection>();
+                var client = new RepositoriesClient(connection);
+
+                var request = new RepositoryRequest
+                {
+                    Type = RepositoryType.Member,
+                    Sort = RepositorySort.Updated,
+                    Direction = SortDirection.Ascending
+                };
+
+                client.GetAllForCurrent(request);
+
+                connection.Received()
+                    .GetAll<Repository>(
+                        Arg.Is<Uri>(u => u.ToString() == "user/repos"),
+                        Arg.Is<Dictionary<string, string>>(d =>
+                            d["type"] == "member" && d["sort"] == "updated" && d["direction"] == "asc"));
+            }
+
+            [Fact]
+            public void CanFilterByVisibility()
+            {
+                var connection = Substitute.For<IApiConnection>();
+                var client = new RepositoriesClient(connection);
+
+                var request = new RepositoryRequest
+                {
+                    Visibility = RepositoryVisibility.Private
+                };
+                client.GetAllForCurrent(request);
+
+                connection.Received()
+                    .GetAll<Repository>(
+                        Arg.Is<Uri>(u => u.ToString() == "user/repos"),
+                        Arg.Is<Dictionary<string, string>>(d =>
+                            d["visibility"] == "private"));
+            }
+
+            [Fact]
+            public void CanFilterByAffiliation()
+            {
+                var connection = Substitute.For<IApiConnection>();
+                var client = new RepositoriesClient(connection);
+
+                var request = new RepositoryRequest
+                {
+
+                    Affiliation = RepositoryAffiliation.Owner,
+                    Sort = RepositorySort.FullName
+                };
+
+                client.GetAllForCurrent(request);
+
+                connection.Received()
+                    .GetAll<Repository>(
+                        Arg.Is<Uri>(u => u.ToString() == "user/repos"),
+                        Arg.Is<Dictionary<string, string>>(d =>
+                            d["affiliation"] == "owner" && d["sort"] == "full_name"));
+            }
         }
 
         public class TheGetAllForUserMethod
         {
             [Fact]
-            public void RequestsTheCorrectUrlAndReturnsOrganizations()
+            public void RequestsTheCorrectUrlAndReturnsRepositories()
             {
                 var connection = Substitute.For<IApiConnection>();
                 var client = new RepositoriesClient(connection);
@@ -301,7 +445,7 @@ namespace Octokit.Tests.Clients
         public class TheGetAllForOrgMethod
         {
             [Fact]
-            public void RequestsTheCorrectUrlAndReturnsOrganizations()
+            public void RequestsTheCorrectUrlAndReturnsRepositories()
             {
                 var connection = Substitute.For<IApiConnection>();
                 var client = new RepositoriesClient(connection);
@@ -332,7 +476,7 @@ namespace Octokit.Tests.Clients
                 client.GetAllBranches("owner", "name");
 
                 connection.Received()
-                    .GetAll<Branch>(Arg.Is<Uri>(u => u.ToString() == "repos/owner/name/branches"));
+                    .GetAll<Branch>(Arg.Is<Uri>(u => u.ToString() == "repos/owner/name/branches"), null, "application/vnd.github.loki-preview+json");
             }
 
             [Fact]
@@ -384,7 +528,7 @@ namespace Octokit.Tests.Clients
                 client.GetAllLanguages("owner", "name");
 
                 connection.Received()
-                    .Get<Dictionary<string, long>>(Arg.Is<Uri>(u => u.ToString() == "repos/owner/name/languages"), null);
+                    .Get<Dictionary<string, long>>(Arg.Is<Uri>(u => u.ToString() == "repos/owner/name/languages"));
             }
 
             [Fact]
@@ -462,7 +606,7 @@ namespace Octokit.Tests.Clients
                 client.GetBranch("owner", "repo", "branch");
 
                 connection.Received()
-                    .Get<Branch>(Arg.Is<Uri>(u => u.ToString() == "repos/owner/repo/branches/branch"), null);
+                    .Get<Branch>(Arg.Is<Uri>(u => u.ToString() == "repos/owner/repo/branches/branch"), null, "application/vnd.github.loki-preview+json");
             }
 
             [Fact]
@@ -538,7 +682,7 @@ namespace Octokit.Tests.Clients
                 client.Compare("owner", "repo", "base", "head");
 
                 connection.Received()
-                    .Get<CompareResult>(Arg.Is<Uri>(u => u.ToString() == "repos/owner/repo/compare/base...head"), null);
+                    .Get<CompareResult>(Arg.Is<Uri>(u => u.ToString() == "repos/owner/repo/compare/base...head"));
             }
 
             [Fact]
@@ -551,7 +695,7 @@ namespace Octokit.Tests.Clients
                 client.Compare("owner", "repo", "base", "shiftkey/my-cool-branch");
 
                 connection.Received()
-                    .Get<CompareResult>(Arg.Is<Uri>(u => u.ToString() == "repos/owner/repo/compare/base...shiftkey%2Fmy-cool-branch"), null);
+                    .Get<CompareResult>(Arg.Is<Uri>(u => u.ToString() == "repos/owner/repo/compare/base...shiftkey%2Fmy-cool-branch"));
             }
         }
 
@@ -581,7 +725,7 @@ namespace Octokit.Tests.Clients
                 client.Get("owner", "name", "reference");
 
                 connection.Received()
-                    .Get<GitHubCommit>(Arg.Is<Uri>(u => u.ToString() == "repos/owner/name/commits/reference"), null);
+                    .Get<GitHubCommit>(Arg.Is<Uri>(u => u.ToString() == "repos/owner/name/commits/reference"));
             }
         }
 
@@ -612,6 +756,38 @@ namespace Octokit.Tests.Clients
                 connection.Received()
                     .GetAll<GitHubCommit>(Arg.Is<Uri>(u => u.ToString() == "repos/owner/name/commits"),
                     Arg.Any<Dictionary<string, string>>());
+            }
+        }
+
+        public class TheEditBranchMethod
+        {
+            [Fact]
+            public void GetsCorrectUrl()
+            {
+                var connection = Substitute.For<IApiConnection>();
+                var client = new RepositoriesClient(connection);
+                var update = new BranchUpdate();
+                const string previewAcceptsHeader = "application/vnd.github.loki-preview+json";
+
+                client.EditBranch("owner", "repo", "branch", update);
+
+                connection.Received()
+                    .Patch<Branch>(Arg.Is<Uri>(u => u.ToString() == "repos/owner/repo/branches/branch"), Arg.Any<BranchUpdate>(), previewAcceptsHeader);
+            }
+
+            [Fact]
+            public async Task EnsuresNonNullArguments()
+            {
+                var client = new RepositoriesClient(Substitute.For<IApiConnection>());
+                var update = new BranchUpdate();
+
+                await Assert.ThrowsAsync<ArgumentNullException>(() => client.EditBranch(null, "repo", "branch", update));
+                await Assert.ThrowsAsync<ArgumentNullException>(() => client.EditBranch("owner", null, "branch", update));
+                await Assert.ThrowsAsync<ArgumentNullException>(() => client.EditBranch("owner", "repo", null, update));
+                await Assert.ThrowsAsync<ArgumentNullException>(() => client.EditBranch("owner", "repo", "branch", null));
+                await Assert.ThrowsAsync<ArgumentException>(() => client.EditBranch("", "repo", "branch", update));
+                await Assert.ThrowsAsync<ArgumentException>(() => client.EditBranch("owner", "", "branch", update));
+                await Assert.ThrowsAsync<ArgumentException>(() => client.EditBranch("owner", "repo", "", update));
             }
         }
     }

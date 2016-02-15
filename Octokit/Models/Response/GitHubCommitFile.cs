@@ -2,6 +2,7 @@
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
+using Octokit.Internal;
 
 namespace Octokit
 {
@@ -14,7 +15,7 @@ namespace Octokit
         public GitHubCommitFile() { }
 
         [SuppressMessage("Microsoft.Naming", "CA1702:CompoundWordsShouldBeCasedCorrectly")]
-        public GitHubCommitFile(string filename, int additions, int deletions, int changes, string status, string blobUrl, string contentsUrl, string rawUrl, string sha, string patch)
+        public GitHubCommitFile(string filename, int additions, int deletions, int changes, string status, string blobUrl, string contentsUrl, string rawUrl, string sha, string patch, string previousFileName)
         {
             Filename = filename;
             Additions = additions;
@@ -26,6 +27,7 @@ namespace Octokit
             RawUrl = rawUrl;
             Sha = sha;
             Patch = patch;
+            PreviousFileName = previousFileName;
         }
 
         /// <summary>
@@ -79,9 +81,15 @@ namespace Octokit
         /// </summary>
         public string Patch { get; protected set; }
 
+        /// <summary>
+        /// The previous filename for a renamed file.
+        /// </summary>
+        [Parameter(Key = "previous_filename")]
+        public string PreviousFileName { get; protected set; }
+
         internal string DebuggerDisplay
         {
-            get { return String.Format(CultureInfo.InvariantCulture, "Filename: {0} ({1})", Filename, Status); }
+            get { return string.Format(CultureInfo.InvariantCulture, "Filename: {0} ({1})", Filename, Status); }
         }
     }
 }

@@ -1,14 +1,10 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Diagnostics;
 using System.Globalization;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace Octokit
 {
-    [DebuggerDisplay("{DebuggerDisplay,nq}")]    
+    [DebuggerDisplay("{DebuggerDisplay,nq}")]
     public class CommitComment
     {
         public CommitComment() { }
@@ -56,7 +52,7 @@ namespace Octokit
         /// <summary>
         /// Line index in the diff that was commented on.
         /// </summary>
-        public int Position { get; protected set; }
+        public int? Position { get; protected set; }
 
         /// <summary>
         /// The line number in the file that was commented on.
@@ -87,7 +83,7 @@ namespace Octokit
         {
             get
             {
-                return String.Format(CultureInfo.InvariantCulture, "Id: {0}, Commit Id: {1}, CreatedAt: {2}", Id, CommitId, CreatedAt);
+                return string.Format(CultureInfo.InvariantCulture, "Id: {0}, Commit Id: {1}, CreatedAt: {2}", Id, CommitId, CreatedAt);
             }
         }
     }

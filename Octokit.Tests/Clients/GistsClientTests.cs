@@ -20,7 +20,7 @@ public class GistsClientTests
 
             client.Get("1");
 
-            connection.Received().Get<Gist>(Arg.Is<Uri>(u => u.ToString() == "gists/1"), null);
+            connection.Received().Get<Gist>(Arg.Is<Uri>(u => u.ToString() == "gists/1"));
         }
     }
 
@@ -45,8 +45,8 @@ public class GistsClientTests
             DateTimeOffset since = DateTimeOffset.Now;
             client.GetAll(since);
 
-            connection.Received().GetAll<Gist>(Arg.Is<Uri>(u => u.ToString() == "gists"), 
-                Arg.Is<IDictionary<string,string>>(x => x.ContainsKey("since")));
+            connection.Received().GetAll<Gist>(Arg.Is<Uri>(u => u.ToString() == "gists"),
+                Arg.Is<IDictionary<string, string>>(x => x.ContainsKey("since")));
         }
 
         [Fact]
@@ -54,7 +54,7 @@ public class GistsClientTests
         {
             var connection = Substitute.For<IApiConnection>();
             var client = new GistsClient(connection);
-            
+
             client.GetAllPublic();
 
             connection.Received().GetAll<Gist>(Arg.Is<Uri>(u => u.ToString() == "gists/public"));
@@ -65,7 +65,7 @@ public class GistsClientTests
         {
             var connection = Substitute.For<IApiConnection>();
             var client = new GistsClient(connection);
-            
+
             DateTimeOffset since = DateTimeOffset.Now;
             client.GetAllPublic(since);
 
@@ -122,6 +122,44 @@ public class GistsClientTests
         }
     }
 
+    public class TheGetChildrenMethods
+    {
+        [Fact]
+        public async Task EnsureNonNullArguments()
+        {
+            var connection = Substitute.For<IApiConnection>();
+            var client = new GistsClient(connection);
+
+            await Assert.ThrowsAsync<ArgumentNullException>(() => client.GetAllCommits(null));
+            await Assert.ThrowsAsync<ArgumentException>(() => client.GetAllCommits(""));
+
+            await Assert.ThrowsAsync<ArgumentNullException>(() => client.GetAllForks(null));
+            await Assert.ThrowsAsync<ArgumentException>(() => client.GetAllForks(""));
+        }
+
+        [Fact]
+        public void RequestsCorrectGetCommitsUrl()
+        {
+            var connection = Substitute.For<IApiConnection>();
+            var client = new GistsClient(connection);
+
+            client.GetAllCommits("9257657");
+
+            connection.Received().GetAll<GistHistory>(Arg.Is<Uri>(u => u.ToString() == "gists/9257657/commits"));
+        }
+
+        [Fact]
+        public void RequestsCorrectGetForksUrl()
+        {
+            var connection = Substitute.For<IApiConnection>();
+            var client = new GistsClient(connection);
+
+            client.GetAllForks("9257657");
+
+            connection.Received().GetAll<GistFork>(Arg.Is<Uri>(u => u.ToString() == "gists/9257657/forks"));
+        }
+    }
+
     public class TheCreateMethod
     {
         [Fact]
@@ -135,7 +173,7 @@ public class GistsClientTests
             newGist.Public = true;
 
             newGist.Files.Add("myGistTestFile.cs", "new GistsClient(connection).Create();");
-            
+
             client.Create(newGist);
 
             connection.Received().Post<Gist>(Arg.Is<Uri>(u => u.ToString() == "gists"), Arg.Any<object>());
@@ -195,7 +233,7 @@ public class GistsClientTests
         public async Task RequestsCorrectValueForStatusCode(HttpStatusCode status, bool expected)
         {
             var response = Task.Factory.StartNew<IApiResponse<object>>(() =>
-                new ApiResponse<object>(new Response(status , null, new Dictionary<string, string>(), "application/json")));
+                new ApiResponse<object>(new Response(status, null, new Dictionary<string, string>(), "application/json")));
             var connection = Substitute.For<IConnection>();
             connection.Get<object>(Arg.Is<Uri>(u => u.ToString() == "gists/1/star"),
                 null, null).Returns(response);
@@ -212,7 +250,7 @@ public class GistsClientTests
         public async Task ThrowsExceptionForInvalidStatusCode()
         {
             var response = Task.Factory.StartNew<IApiResponse<object>>(() =>
-                new ApiResponse<object>(new Response(HttpStatusCode.Conflict , null, new Dictionary<string, string>(), "application/json")));
+                new ApiResponse<object>(new Response(HttpStatusCode.Conflict, null, new Dictionary<string, string>(), "application/json")));
             var connection = Substitute.For<IConnection>();
             connection.Get<object>(Arg.Is<Uri>(u => u.ToString() == "gists/1/star"),
                 null, null).Returns(response);
@@ -221,7 +259,7 @@ public class GistsClientTests
 
             var client = new GistsClient(apiConnection);
 
-            await AssertEx.Throws<ApiException>(async () => await client.IsStarred("1"));
+            await Assert.ThrowsAsync<ApiException>(() => client.IsStarred("1"));
         }
     }
 
@@ -235,7 +273,7 @@ public class GistsClientTests
 
             client.Fork("1");
 
-            connection.Received().Post<Gist>(Arg.Is<Uri>(u => u.ToString() == "gists/1/forks"), 
+            connection.Received().Post<Gist>(Arg.Is<Uri>(u => u.ToString() == "gists/1/forks"),
                                              Arg.Any<object>());
         }
     }
@@ -250,8 +288,8 @@ public class GistsClientTests
 
             var updateGist = new GistUpdate();
             updateGist.Description = "my newly updated gist";
-            var gistFileUpdate = new GistFileUpdate 
-            { 
+            var gistFileUpdate = new GistFileUpdate
+            {
                 NewFileName = "myNewGistTestFile.cs",
                 Content = "new GistsClient(connection).Edit();"
             };

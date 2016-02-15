@@ -13,7 +13,7 @@
     <MonoAndroidAssetsPrefix>Assets</MonoAndroidAssetsPrefix>
     <AndroidUseLatestPlatformSdk>False</AndroidUseLatestPlatformSdk>
     <AssemblyName>Octokit.Reactive</AssemblyName>
-    <TargetFrameworkVersion>v2.2</TargetFrameworkVersion>
+    <LangVersion>5</LangVersion>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
     <DebugSymbols>true</DebugSymbols>
@@ -157,8 +157,28 @@
     <Compile Include="Clients\ObservableRepositoryDeployKeysClient.cs" />
     <Compile Include="Clients\IObservableUserKeysClient.cs" />
     <Compile Include="Clients\ObservableUserKeysClient.cs" />
+    <Compile Include="Clients\IObservableRepositoryForksClient.cs" />
+    <Compile Include="Clients\IObservableRepositoryHooksClient.cs" />
+    <Compile Include="Clients\ObservableRepositoryForksClient.cs" />
+    <Compile Include="Clients\ObservableRepositoryHooksClient.cs" />
     <Compile Include="Clients\IObservableRepositoryContentsClient.cs" />
     <Compile Include="Clients\ObservableRepositoryContentsClient.cs" />
+    <Compile Include="Clients\IObservableMergingClient.cs" />
+    <Compile Include="Clients\ObservableMergingClient.cs" />
+    <Compile Include="Clients\IObservableRepositoryPagesClient.cs" />
+    <Compile Include="Clients\ObservableRepositoryPagesClient.cs" />
+    <Compile Include="Clients\Enterprise\IObservableEnterpriseAdminStatsClient.cs" />
+    <Compile Include="Clients\Enterprise\IObservableEnterpriseClient.cs" />
+    <Compile Include="Clients\Enterprise\ObservableEnterpriseAdminStatsClient.cs" />
+    <Compile Include="Clients\Enterprise\ObservableEnterpriseClient.cs" />
+    <Compile Include="Clients\Enterprise\IObservableEnterpriseLicenseClient.cs" />
+    <Compile Include="Clients\Enterprise\ObservableEnterpriseLicenseClient.cs" />
+    <Compile Include="Clients\Enterprise\IObservableEnterpriseOrganizationClient.cs" />
+    <Compile Include="Clients\Enterprise\ObservableEnterpriseOrganizationClient.cs" />
+    <Compile Include="Clients\IObservableUserAdministrationClient.cs" />
+    <Compile Include="Clients\ObservableUserAdministrationClient.cs" />
+    <Compile Include="Clients\Enterprise\IObservableEnterpriseSearchIndexingClient.cs" />
+    <Compile Include="Clients\Enterprise\ObservableEnterpriseSearchIndexingClient.cs" />
   </ItemGroup>
   <Import Project="$(MSBuildExtensionsPath)\Novell\Novell.MonoDroid.CSharp.targets" />
   <ItemGroup>

@@ -6,16 +6,14 @@ using Octokit.Internal;
 
 namespace Octokit
 {
+    /// <summary>
+    /// Specifies the values used to update an issue.
+    /// </summary>
     [DebuggerDisplay("{DebuggerDisplay,nq}")]
     public class IssueUpdate
     {
-        public IssueUpdate()
-        {
-            Labels = new List<string>();
-        }
-
         /// <summary>
-        /// Title of the milestone (required)
+        /// Title of the issue (required)
         /// </summary>
         public string Title { get; set; }
 
@@ -60,13 +58,39 @@ namespace Octokit
         {
             get
             {
-                return String.Format(CultureInfo.InvariantCulture, "Title: {0}",Title);
+                return string.Format(CultureInfo.InvariantCulture, "Title: {0}", Title);
             }
         }
 
+        /// <summary>
+        /// Adds the specified label to the issue.
+        /// </summary>
+        /// <param name="name">The name of the label.</param>
         public void AddLabel(string name)
         {
+            // lazily create the label array
+            if (Labels == null)
+            {
+                Labels = new List<string>();
+            }
+
             Labels.Add(name);
+        }
+
+        /// <summary>
+        /// Clears all the labels.
+        /// </summary>
+        public void ClearLabels()
+        {
+            // lazily create the label array
+            if (Labels == null)
+            {
+                Labels = new List<string>();
+            }
+            else
+            {
+                Labels.Clear();
+            }
         }
     }
 }

@@ -33,6 +33,18 @@ namespace Octokit.Reactive
         IObservable<Release> Get(string owner, string name, int id);
 
         /// <summary>
+        /// Gets the latest <see cref="Release"/> for the specified repository.
+        /// </summary>
+        /// <remarks>
+        /// See the <a href="https://developer.github.com/v3/repos/releases/#get-the-latest-release">API documentation</a> for more information.
+        /// </remarks>
+        /// <param name="owner">The repository's owner</param>
+        /// <param name="name">The repository's name</param>
+        /// <exception cref="ApiException">Thrown when a general API error occurs.</exception>
+        /// <returns>The latest <see cref="Release"/> specified by the repository</returns>
+        IObservable<Release> GetLatest(string owner, string name);
+
+        /// <summary>
         /// Creates a new <see cref="Release"/> for the specified repository.
         /// </summary>
         /// <remarks>
@@ -83,7 +95,7 @@ namespace Octokit.Reactive
         /// <param name="id">The id of the <see cref="Release"/>.</param>
         /// <exception cref="ApiException">Thrown when a general API error occurs.</exception>
         /// <returns>The list of <see cref="ReleaseAsset"/> for the specified release of the specified repository.</returns>
-        IObservable<ReleaseAsset> GetAssets(string owner, string name, int id);
+        IObservable<ReleaseAsset> GetAllAssets(string owner, string name, int id);
 
         /// <summary>
         /// Uploads a <see cref="ReleaseAsset"/> for the specified release.

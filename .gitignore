@@ -1,5 +1,5 @@
 # Windows image file caches
-Thumbs.db 
+Thumbs.db
 
 # Folder config file
 Desktop.ini
@@ -38,6 +38,7 @@ bin/**/*.pdb
 
 # Roslyn cache directories
 *.ide/
+*.vs/
 
 # Visual C++ cache files
 ipch/
@@ -73,10 +74,20 @@ nunit-*.xml
 packaging/
 tools/FAKE.Core
 tools/SourceLink.Fake
-tools/xunit.runners
+tools/xunit.runner.console
+tools/Octokit.CodeFormatter
 *.ncrunch*
 *.GhostDoc.xml
+
+# FAKE temporary files
+.fake/
 
 # New VS Test Runner creates arbitrary folders with PDBs
 *.pdb
 pingme.txt
+
+# ReadTheDocs build output
+docs/_build
+
+# it's 2015, no need to keep this around when migrating projects
+Backup/

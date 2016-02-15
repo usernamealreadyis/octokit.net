@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Linq;
 using System.Threading.Tasks;
+using Octokit.Tests.Integration.Helpers;
 using Xunit;
 
 namespace Octokit.Tests.Integration.Clients
@@ -12,10 +13,7 @@ namespace Octokit.Tests.Integration.Clients
             [IntegrationTest]
             public async Task ReturnsReadmeForSeeGit()
             {
-                var github = new GitHubClient(new ProductHeaderValue("OctokitTests"))
-                {
-                    Credentials = Helper.Credentials
-                };
+                var github = Helper.GetAuthenticatedClient();
 
                 var readme = await github.Repository.Content.GetReadme("octokit", "octokit.net");
                 Assert.Equal("README.md", readme.Name);
@@ -28,10 +26,7 @@ namespace Octokit.Tests.Integration.Clients
             [IntegrationTest]
             public async Task ReturnsReadmeHtmlForSeeGit()
             {
-                var github = new GitHubClient(new ProductHeaderValue("OctokitTests"))
-                {
-                    Credentials = Helper.Credentials
-                };
+                var github = Helper.GetAuthenticatedClient();
 
                 var readmeHtml = await github.Repository.Content.GetReadmeHtml("octokit", "octokit.net");
                 Assert.True(readmeHtml.StartsWith("<div class="));
@@ -45,15 +40,12 @@ namespace Octokit.Tests.Integration.Clients
             [IntegrationTest]
             public async Task GetsFileContent()
             {
-                var github = new GitHubClient(new ProductHeaderValue("OctokitTests"))
-                {
-                    Credentials = Helper.Credentials
-                };
+                var github = Helper.GetAuthenticatedClient();
 
                 var contents = await github
                     .Repository
                     .Content
-                    .GetContents("octokit", "octokit.net", "Octokit.Reactive/ObservableGitHubClient.cs");
+                    .GetAllContents("octokit", "octokit.net", "Octokit.Reactive/ObservableGitHubClient.cs");
 
                 Assert.Equal(1, contents.Count);
                 Assert.Equal(ContentType.File, contents.First().Type);
@@ -63,15 +55,12 @@ namespace Octokit.Tests.Integration.Clients
             [IntegrationTest]
             public async Task GetsDirectoryContent()
             {
-                var github = new GitHubClient(new ProductHeaderValue("OctokitTests"))
-                {
-                    Credentials = Helper.Credentials
-                };
+                var github = Helper.GetAuthenticatedClient();
 
                 var contents = await github
                     .Repository
                     .Content
-                    .GetContents("octokit", "octokit.net", "Octokit");
+                    .GetAllContents("octokit", "octokit.net", "Octokit");
 
                 Assert.True(contents.Count > 2);
                 Assert.Equal(ContentType.Dir, contents.First().Type);
@@ -81,16 +70,13 @@ namespace Octokit.Tests.Integration.Clients
         [IntegrationTest]
         public async Task CrudTest()
         {
-            var client = new GitHubClient(new ProductHeaderValue("OctokitTests"))
+            var client = Helper.GetAuthenticatedClient();
+            var fixture = client.Repository.Content;
+            var repoName = Helper.MakeNameWithTimestamp("source-repo");
+
+            using (var context = await client.CreateRepositoryContext(new NewRepository(repoName) { AutoInit = true }))
             {
-                Credentials = Helper.Credentials
-            };
-            Repository repository = null;
-            try
-            {
-                var fixture = client.Repository.Content;
-                var repoName = Helper.MakeNameWithTimestamp("source-repo");
-                repository = await client.Repository.Create(new NewRepository { Name = repoName, AutoInit = true });
+                var repository = context.Repository;
 
                 var file = await fixture.CreateFile(
                     repository.Owner.Login,
@@ -99,7 +85,7 @@ namespace Octokit.Tests.Integration.Clients
                     new CreateFileRequest("Test commit", "Some Content"));
                 Assert.Equal("somefile.txt", file.Content.Name);
 
-                var contents = await fixture.GetContents(repository.Owner.Login, repository.Name, "somefile.txt");
+                var contents = await fixture.GetAllContents(repository.Owner.Login, repository.Name, "somefile.txt");
                 string fileSha = contents.First().Sha;
                 Assert.Equal("Some Content", contents.First().Content);
 
@@ -110,7 +96,7 @@ namespace Octokit.Tests.Integration.Clients
                     new UpdateFileRequest("Updating file", "New Content", fileSha));
                 Assert.Equal("somefile.txt", update.Content.Name);
 
-                contents = await fixture.GetContents(repository.Owner.Login, repository.Name, "somefile.txt");
+                contents = await fixture.GetAllContents(repository.Owner.Login, repository.Name, "somefile.txt");
                 Assert.Equal("New Content", contents.First().Content);
                 fileSha = contents.First().Sha;
 
@@ -121,12 +107,94 @@ namespace Octokit.Tests.Integration.Clients
                     new DeleteFileRequest("Deleted file", fileSha));
 
                 await Assert.ThrowsAsync<NotFoundException>(
-                    async () => await fixture.GetContents(repository.Owner.Login, repository.Name, "somefile.txt"));
+                     () => fixture.GetAllContents(repository.Owner.Login, repository.Name, "somefile.txt"));
             }
-            finally
+        }
+
+        [IntegrationTest]
+        public async Task CrudTestWithNamedBranch()
+        {
+            var client = Helper.GetAuthenticatedClient();
+            var fixture = client.Repository.Content;
+            var repoName = Helper.MakeNameWithTimestamp("source-repo");
+            var branchName = "other-branch";
+
+            using (var context = await client.CreateRepositoryContext(new NewRepository(repoName) { AutoInit = true }))
             {
-                Helper.DeleteRepo(repository);
+                var repository = context.Repository;
+
+                var master = await client.Git.Reference.Get(Helper.UserName, repository.Name, "heads/master");
+                await client.Git.Reference.Create(Helper.UserName, repository.Name, new NewReference("refs/heads/" + branchName, master.Object.Sha));
+                var file = await fixture.CreateFile(
+                    repository.Owner.Login,
+                    repository.Name,
+                    "somefile.txt",
+                    new CreateFileRequest("Test commit", "Some Content", branchName));
+                Assert.Equal("somefile.txt", file.Content.Name);
+
+                var contents = await fixture.GetAllContentsByRef(repository.Owner.Login, repository.Name, "somefile.txt", branchName);
+                string fileSha = contents.First().Sha;
+                Assert.Equal("Some Content", contents.First().Content);
+
+                var update = await fixture.UpdateFile(
+                    repository.Owner.Login,
+                    repository.Name,
+                    "somefile.txt",
+                    new UpdateFileRequest("Updating file", "New Content", fileSha, branchName));
+                Assert.Equal("somefile.txt", update.Content.Name);
+
+                contents = await fixture.GetAllContentsByRef(repository.Owner.Login, repository.Name, "somefile.txt", branchName);
+                Assert.Equal("New Content", contents.First().Content);
+                fileSha = contents.First().Sha;
+
+                await fixture.DeleteFile(
+                    repository.Owner.Login,
+                    repository.Name,
+                    "somefile.txt",
+                    new DeleteFileRequest("Deleted file", fileSha, branchName));
+
+                await Assert.ThrowsAsync<NotFoundException>(
+                    () => fixture.GetAllContents(repository.Owner.Login, repository.Name, "somefile.txt"));
             }
+        }
+
+        [IntegrationTest(Skip = "this will probably take too long")]
+        public async Task GetsArchiveAsTarball()
+        {
+            var github = Helper.GetAuthenticatedClient();
+
+            var archive = await github
+                .Repository
+                .Content
+                .GetArchive("octokit", "octokit.net");
+
+            Assert.NotEmpty(archive);
+        }
+
+        [IntegrationTest]
+        public async Task GetsArchiveAsZipball()
+        {
+            var github = Helper.GetAuthenticatedClient();
+
+            var archive = await github
+                .Repository
+                .Content
+                .GetArchive("shiftkey", "reactivegit", ArchiveFormat.Zipball);
+
+            Assert.NotEmpty(archive);
+        }
+
+        [IntegrationTest]
+        public async Task GetsArchiveForReleaseBranchAsTarball()
+        {
+            var github = Helper.GetAuthenticatedClient();
+
+            var archive = await github
+                .Repository
+                .Content
+                .GetArchive("alfhenrik", "ScriptCs.OctoKit", ArchiveFormat.Tarball, "dev");
+
+            Assert.NotEmpty(archive);
         }
     }
 }

@@ -1,9 +1,9 @@
+using System.Diagnostics.CodeAnalysis;
+using System.Threading.Tasks;
 using System;
 #if NET_45
 using System.Collections.Generic;
 #endif
-using System.Diagnostics.CodeAnalysis;
-using System.Threading.Tasks;
 
 namespace Octokit
 {
@@ -29,7 +29,16 @@ namespace Octokit
         /// <remarks>
         /// See the <a href="http://developer.github.com/v3/repos/comments/">Repository Comments API documentation</a> for more information.
         /// </remarks>
+        [System.Obsolete("Comment information is now available under the Comment property. This will be removed in a future update.")]
         IRepositoryCommentsClient RepositoryComments { get; }
+
+        /// <summary>
+        /// Client for managing commit comments in a repository.
+        /// </summary>
+        /// <remarks>
+        /// See the <a href="http://developer.github.com/v3/repos/comments/">Repository Comments API documentation</a> for more information.
+        /// </remarks>
+        IRepositoryCommentsClient Comment { get; }
 
         /// <summary>
         /// Client for managing deploy keys in a repository.
@@ -94,7 +103,35 @@ namespace Octokit
         /// <returns>A <see cref="Repository"/></returns>
         [SuppressMessage("Microsoft.Naming", "CA1716:IdentifiersShouldNotMatchKeywords", MessageId = "Get")]
         Task<Repository> Get(string owner, string name);
-        
+
+        /// <summary>
+        /// Gets all public repositories.
+        /// </summary>
+        /// <remarks>
+        /// See the <a href="https://developer.github.com/v3/repos/#list-all-public-repositories">API documentation</a> for more information.
+        /// The default page size on GitHub.com is 30.
+        /// </remarks>
+        /// <exception cref="AuthorizationException">Thrown if the client is not authenticated.</exception>
+        /// <exception cref="ApiException">Thrown when a general API error occurs.</exception>
+        /// <returns>A <see cref="IReadOnlyPagedCollection{Repository}"/> of <see cref="Repository"/>.</returns>
+        [SuppressMessage("Microsoft.Design", "CA1024:UsePropertiesWhereAppropriate",
+            Justification = "Makes a network request")]
+        Task<IReadOnlyList<Repository>> GetAllPublic();
+
+
+        /// <summary>
+        /// Gets all public repositories since the integer ID of the last Repository that you've seen.
+        /// </summary>
+        /// <remarks>
+        /// See the <a href="https://developer.github.com/v3/repos/#list-all-public-repositories">API documentation</a> for more information.
+        /// The default page size on GitHub.com is 30.
+        /// </remarks>
+        /// <param name="request">Search parameters of the last repository seen</param>
+        /// <exception cref="AuthorizationException">Thrown if the client is not authenticated.</exception>
+        /// <exception cref="ApiException">Thrown when a general API error occurs.</exception>
+        /// <returns>A <see cref="IReadOnlyPagedCollection{Repository}"/> of <see cref="Repository"/>.</returns>
+        Task<IReadOnlyList<Repository>> GetAllPublic(PublicRepositoryRequest request);
+
         /// <summary>
         /// Gets all repositories owned by the current user.
         /// </summary>
@@ -108,7 +145,22 @@ namespace Octokit
         [SuppressMessage("Microsoft.Design", "CA1024:UsePropertiesWhereAppropriate",
             Justification = "Makes a network request")]
         Task<IReadOnlyList<Repository>> GetAllForCurrent();
-        
+
+        /// <summary>
+        /// Gets all repositories owned by the current user.
+        /// </summary>
+        /// <remarks>
+        /// See the <a href="http://developer.github.com/v3/repos/#list-your-repositories">API documentation</a> for more information.
+        /// The default page size on GitHub.com is 30.
+        /// </remarks>
+        /// <param name="request">Search parameters to filter results on</param>
+        /// <exception cref="AuthorizationException">Thrown if the client is not authenticated.</exception>
+        /// <exception cref="ApiException">Thrown when a general API error occurs.</exception>
+        /// <returns>A <see cref="IReadOnlyPagedCollection{Repository}"/> of <see cref="Repository"/>.</returns>
+        [SuppressMessage("Microsoft.Design", "CA1024:UsePropertiesWhereAppropriate",
+            Justification = "Makes a network request")]
+        Task<IReadOnlyList<Repository>> GetAllForCurrent(RepositoryRequest request);
+
         /// <summary>
         /// Gets all repositories owned by the specified user.
         /// </summary>
@@ -136,30 +188,15 @@ namespace Octokit
         Task<IReadOnlyList<Repository>> GetAllForOrg(string organization);
 
         /// <summary>
-        /// Gets the preferred README for the specified repository.
+        /// A client for GitHub's Commit Status API.
         /// </summary>
         /// <remarks>
-        /// See the <a href="http://developer.github.com/v3/repos/contents/#get-the-readme">API documentation</a> for more information.
+        /// See the <a href="http://developer.github.com/v3/repos/statuses/">Commit Status API documentation</a> for more
+        /// details. Also check out the <a href="https://github.com/blog/1227-commit-status-api">blog post</a> 
+        /// that announced this feature.
         /// </remarks>
-        /// <param name="owner">The owner of the repository</param>
-        /// <param name="name">The name of the repository</param>
-        /// <exception cref="ApiException">Thrown when a general API error occurs.</exception>
-        /// <returns></returns>
-        [Obsolete("This method has been obsoleted by Content.GetReadme. Please use that instead.")]
-        Task<Readme> GetReadme(string owner, string name);
-
-        /// <summary>
-        /// Gets the perferred README's HTML for the specified repository.
-        /// </summary>
-        /// <remarks>
-        /// See the <a href="http://developer.github.com/v3/repos/contents/#get-the-readme">API documentation</a> for more information.
-        /// </remarks>
-        /// <param name="owner">The owner of the repository</param>
-        /// <param name="name">The name of the repository</param>
-        /// <exception cref="ApiException">Thrown when a general API error occurs.</exception>
-        /// <returns></returns>
-        [Obsolete("This method has been obsoleted by Content.GetReadmeHtml. Please use that instead.")]
-        Task<string> GetReadmeHtml(string owner, string name);
+        [Obsolete("Use Status instead")]
+        ICommitStatusClient CommitStatus { get; }
 
         /// <summary>
         /// A client for GitHub's Commit Status API.
@@ -169,7 +206,19 @@ namespace Octokit
         /// details. Also check out the <a href="https://github.com/blog/1227-commit-status-api">blog post</a> 
         /// that announced this feature.
         /// </remarks>
-        ICommitStatusClient CommitStatus { get; }
+        ICommitStatusClient Status { get; }
+
+        /// <summary>
+        /// A client for GitHub's Repository Hooks API.
+        /// </summary>
+        /// <remarks>See <a href="http://developer.github.com/v3/repos/hooks/">Hooks API documentation</a> for more information.</remarks>
+        IRepositoryHooksClient Hooks { get; }
+
+        /// <summary>
+        /// A client for GitHub's Repository Forks API.
+        /// </summary>
+        /// <remarks>See <a href="http://developer.github.com/v3/repos/forks/">Forks API documentation</a> for more information.</remarks>        
+        IRepositoryForksClient Forks { get; }
 
         /// <summary>
         /// A client for GitHub's Repo Collaborators.
@@ -177,7 +226,16 @@ namespace Octokit
         /// <remarks>
         /// See the <a href="http://developer.github.com/v3/repos/collaborators/">Collaborators API documentation</a> for more details
         /// </remarks>
+        [System.Obsolete("Collaborator information is now available under the Collaborator property. This will be removed in a future update.")]
         IRepoCollaboratorsClient RepoCollaborators { get; }
+
+        /// <summary>
+        /// A client for GitHub's Repo Collaborators.
+        /// </summary>
+        /// <remarks>
+        /// See the <a href="http://developer.github.com/v3/repos/collaborators/">Collaborators API documentation</a> for more details
+        /// </remarks>
+        IRepoCollaboratorsClient Collaborator { get; }
 
         /// <summary>
         /// Client for GitHub's Repository Deployments API
@@ -201,7 +259,32 @@ namespace Octokit
         /// <remarks>
         /// See the <a href="http://developer.github.com/v3/repos/commits/">Commits API documentation</a> for more details
         ///</remarks>
+        [System.Obsolete("Commit information is now available under the Commit property. This will be removed in a future update.")]
         IRepositoryCommitsClient Commits { get; }
+
+        /// <summary>
+        /// Client for GitHub's Repository Commits API
+        /// </summary>
+        /// <remarks>
+        /// See the <a href="http://developer.github.com/v3/repos/commits/">Commits API documentation</a> for more details
+        ///</remarks>
+        IRepositoryCommitsClient Commit { get; }
+
+        /// <summary>
+        /// Access GitHub's Releases API.
+        /// </summary>
+        /// <remarks>
+        /// Refer to the API docmentation for more information: https://developer.github.com/v3/repos/releases/
+        /// </remarks>
+        IReleasesClient Release { get; }
+
+        /// <summary>
+        /// Client for GitHub's Repository Merging API
+        /// </summary>
+        /// <remarks>
+        /// See the <a href="https://developer.github.com/v3/repos/merging/">Merging API documentation</a> for more details
+        ///</remarks>
+        IMergingClient Merging { get; }
 
         /// <summary>
         /// Gets all the branches for the specified repository.
@@ -291,5 +374,23 @@ namespace Octokit
         /// <param name="update">New values to update the repository with</param>
         /// <returns>The updated <see cref="T:Octokit.Repository"/></returns>
         Task<Repository> Edit(string owner, string name, RepositoryUpdate update);
+
+        /// <summary>
+        /// Edit the specified branch with the values given in <paramref name="update"/>
+        /// </summary>
+        /// <param name="owner">The owner of the repository</param>
+        /// <param name="name">The name of the repository</param>
+        /// <param name="branch">The name of the branch</param>
+        /// <param name="update">New values to update the branch with</param>
+        /// <returns>The updated <see cref="T:Octokit.Branch"/></returns>
+        Task<Branch> EditBranch(string owner, string name, string branch, BranchUpdate update);
+
+        /// <summary>
+        /// A client for GitHub's Repository Pages API.
+        /// </summary>
+        /// <remarks>
+        /// See the <a href="https://developer.github.com/v3/repos/pages/">Repository Pages API documentation</a> for more information.
+        /// </remarks>
+        IRepositoryPagesClient Page { get; }
     }
 }

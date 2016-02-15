@@ -6,6 +6,7 @@ using Octokit.Tests.Helpers;
 using System;
 using System.Collections.Generic;
 using System.Reactive.Linq;
+using System.Reactive.Threading.Tasks;
 using System.Threading.Tasks;
 using Xunit;
 
@@ -29,10 +30,10 @@ public class ObservableIssuesClientTests
         {
             var client = new ObservableIssuesClient(Substitute.For<IGitHubClient>());
 
-            await AssertEx.Throws<ArgumentNullException>(async () => await client.Get(null, "name", 1));
-            await AssertEx.Throws<ArgumentNullException>(async () => await client.Get("owner", null, 1));
-            await AssertEx.Throws<ArgumentException>(async () => await client.Get(null, "", 1));
-            await AssertEx.Throws<ArgumentException>(async () => await client.Get("", null, 1));
+            await Assert.ThrowsAsync<ArgumentNullException>(() => client.Get(null, "name", 1).ToTask());
+            await Assert.ThrowsAsync<ArgumentNullException>(() => client.Get("owner", null, 1).ToTask());
+            await Assert.ThrowsAsync<ArgumentNullException>(() => client.Get(null, "", 1).ToTask());
+            await Assert.ThrowsAsync<ArgumentException>(() => client.Get("", null, 1).ToTask());
         }
     }
 
@@ -88,7 +89,7 @@ public class ObservableIssuesClientTests
                 .Returns(Task.Factory.StartNew<IApiResponse<List<Issue>>>(() => lastPageResponse));
             var client = new ObservableIssuesClient(gitHubClient);
 
-            var results = await client.GetForRepository("fake", "repo").ToArray();
+            var results = await client.GetAllForRepository("fake", "repo").ToArray();
 
             Assert.Equal(7, results.Length);
             Assert.Equal(firstPageResponse.Body[0].Number, results[0].Number);
